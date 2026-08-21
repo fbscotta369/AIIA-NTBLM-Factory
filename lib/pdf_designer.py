@@ -1,27 +1,26 @@
 #!/usr/bin/env python3
 """
-AIIA-NTBLM-Factory — PDF Designer (simplified)
+AIIA-NTBLM-Factory — PDF Designer
 Generates PDF (desktop + mobile) and ePub from Markdown content.
-Uses pandoc as primary engine (simpler, no LaTeX escaping issues).
-Falls back to simple HTML→PDF if pandoc unavailable.
+Uses LaTeX (pdflatex/xelatex) for professional PDF output.
 """
 
-import json
-import os
 import re
 import subprocess
-import tempfile
+import zipfile
 from pathlib import Path
-from typing import Dict, List, Optional
 from datetime import datetime
-
-ROOT = Path(__file__).parent.parent.resolve()
-OUTPUT_DIR = ROOT / "output"
+from typing import List, Dict, Optional
 
 
-def generate_pdf(docs: str, infographics: List[Dict], lang: str, fmt: str = "desktop") -> str:
+def generate_pdf(
+    docs: str,
+    infographics: Optional[List[Dict]] = None,
+    lang: str = "es",
+    fmt: str = "desktop",
+) -> str:
     """
-    Generate PDF from markdown content using pandoc (preferred) or simple fallback.
+    Generate PDF from Markdown content using LaTeX.
 
     Args:
         docs: Markdown content string
@@ -32,113 +31,310 @@ def generate_pdf(docs: str, infographics: List[Dict], lang: str, fmt: str = "des
     Returns:
         Path to generated PDF file, or empty string on failure
     """
-    lang_name = {"es": "Spanish", "en": "English"}.get(lang, lang)
+    if infographics is None:
+        infographics = []
 
-    # Extract title
-    title_match = re.search(r'^#\s+(.+)$', docs, re.MULTILINE)
+    lang_name = {"es": "Espanol", "en": "English"}.get(lang, lang)
+    page_size = "a4" if fmt == "desktop" else "a5"
+    font_size = 11 if fmt == "desktop" else 10
+    margin = "2cm" if fmt == "desktop" else "1.5cm"
+
+    title_match = re.search(r"^#\s+(.+)$", docs, re.MULTILINE)
     title = title_match.group(1) if title_match else f"Documento {lang_name}"
+    safe_title = re.sub(r"[^\w\s]", "", title)
 
-    # Create output directory
-    output_dir = OUTPUT_DIR / ("pdf_desktop" if fmt == "desktop" else "pdf_mobile")
+    output_dir = Path("output") / ("pdf_desktop" if fmt == "desktop" else "pdf_mobile")
     output_dir.mkdir(parents=True, exist_ok=True)
-
-    # Filename
-    slug = re.sub(r'[^\w]', '', f"{lang}_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+    slug = re.sub(r"[^\w]", "", f"{lang}_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
     output_path = output_dir / f"{slug}.pdf"
 
-    # Strategy: pandoc with wkhtmltopdf or weasyprint, or simple HTML fallback
-    success = False
-    method = None
+    # Escape LaTeX special chars
+    def escape(text):
+        return (text.replace("\\", "")
+                    .replace("&", "\\&")
+                    .replace("%", "\\%")
+                    .replace("$", "\\$")
+                    .replace("#", "\\#")
+                    .replace("_", "\\_")
+                    .replace("{", "\\{")
+                    .replace("}", "\\}")
+                    .replace("^", "\\textasciicircum{}")
+                    .replace("~", "\\textasciitilde{}"))
 
-    # Method 1: pandoc with HTML output + wkhtmltopdf
-    if shutil_which("wkhtmltopdf"):
-        success, method = pandoc_html_to_pdf(docs, output_path, lang, title)
-        if success:
-            print(f"  📄 PDF Desktop generado con pandoc+wkhtmltopdf: {output_path}")
-            return str(output_path)
+    # Build LaTeX document
+    latex = f"""\\documentclass[{font_size}pt]{{{page_size}}}
+\\usepackage[margin={margin}]{{geometry}}
+\\usepackage[utf8]{{inputenc}}
+\\usepackage[T1]{{fontenc}}
+\\usepackage{{xcolor}}
+\\usepackage{{graphicx}}
+\\usepackage{{hyperref}}
+\\usepackage{{fancyhdr}}
+\\usepackage{{enumitem}}
+\\definecolor{{navy}}{{RGB}}{{26,26,46}}
+\\definecolor{{blue}}{{RGB}}{{74,144,217}}
+\\pagestyle{{fancy}}
+\\fancyhf{{}}
+\\fancyhead[L]{{{escape(safe_title)}}}
+\\fancyhead[R]{{{fmt.upper()}}}
+\\fancyfoot[C]{{\\thepage}}
+\\renewcommand{{\\headrulewidth}}{{0.4pt}}
 
-    # Method 2: pandoc direct to PDF (needs LaTeX)
-    if shutil_which("pandoc") and shutil_which("pdflatex"):
-        success, method = pandoc_direct_pdf(docs, output_path, lang, title)
-        if success:
-            print(f"  📄 PDF generado con pandoc+LaTeX: {output_path}")
-            return str(output_path)
+\\title{{{escape(title)}}}
+\\author{{AIIA-NTBLM-Factory v1.0}}
+\\date{{\\today}}
 
-    # Method 3: pandoc to HTML, then weasyprint
-    if shutil_which("pandoc") and shutil_which("weasyprint"):
-        success, method = pandoc_html_weasyprint(docs, output_path, lang, title)
-        if success:
-            print(f"  📄 PDF generado con pandoc+weasyprint: {output_path}")
-            return str(output_path)
+\\begin{{document}}
+\\maketitle
+\\thispagestyle{{fancy}}
 
-    # Method 4: Simple HTML → PDF via weasyprint (no pandoc)
-    if shutil_which("weasyprint"):
-        success, method = simple_html_to_pdf(docs, output_path, lang, title, fmt)
-        if success:
-            print(f"  📄 PDF generado con HTML+weasyprint: {output_path}")
-            return str(output_path)
+\\section{{Introduccion / Introduction}}
+\\begin{{itemize}}
+\\item Generado por AIIA-NTBLM-Factory v1.0
+\\item Idioma: {lang_name} | Formato: {fmt}
+\\item Voz: Femenina
+\\end{{itemize}}
 
-    # Method 5: Pure Python fallback with reportlab
-    try:
-        import reportlab
-        success, method = reportlab_pdf(docs, output_path, lang, title, fmt)
-        if success:
-            print(f"  📄 PDF generado con reportlab: {output_path}")
-            return str(output_path)
-    except ImportError:
-        pass
+"""
 
-    print(f"  ❌ No se pudo generar PDF. Instala: pandoc, wkhtmltopdf, weasyprint, o reportlab")
+    # Parse markdown sections
+    lines = docs.split("\n")
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+
+        if stripped.startswith("# "):
+            current_section = escape(stripped[2:])
+            latex += f"\\section{{{current_section}}}\n"
+        elif stripped.startswith("## "):
+            current_section = escape(stripped[3:])
+            latex += f"\\subsection{{{current_section}}}\n"
+        elif stripped.startswith("### "):
+            current_section = escape(stripped[4:])
+            latex += f"\\subsubsection{{{current_section}}}\n"
+        elif stripped.startswith("- ") or stripped.startswith("* "):
+            item = escape(stripped[2:])
+            latex += f"\\item {item}\n"
+        elif stripped.startswith("> "):
+            quote = escape(stripped[2:])
+            latex += f"\\begin{{quote}}{quote}\\end{{quote}}\n"
+        elif stripped.startswith("**") and "**" in stripped[2:]:
+            parts = stripped.split("**")
+            line_out = ""
+            for i, p in enumerate(parts):
+                if i % 2 == 1:
+                    line_out += f"\\textbf{{{escape(p)}}}"
+                else:
+                    line_out += escape(p)
+            latex += f"{line_out}\n"
+        elif stripped:
+            latex += f"{escape(stripped)}\n"
+
+    # Final section
+    latex += f"""
+\\section{{Conclusion}}
+Este documento fue generado automaticamente por AIIA-NTBLM-Factory v1.0
+utilizando NotebookLM para el analisis profundo de las fuentes proporcionadas.
+
+\\end{{document}}
+"""
+
+    # Write LaTeX file
+    tex_path = output_dir / f"{slug}.tex"
+    with open(tex_path, "w", encoding="utf-8") as f:
+        f.write(latex)
+
+    # Compile: try xelatex first (better Unicode), fall back to pdflatex
+    for engine in ("xelatex", "pdflatex"):
+        try:
+            result = subprocess.run(
+                [engine, "-interaction=nonstopmode", "-halt-on-error",
+                 "-output-directory", str(output_dir), str(tex_path)],
+                capture_output=True, text=True, timeout=120, check=False,
+            )
+            if output_path.exists() and output_path.stat().st_size > 1000:
+                print(f"  PDF generado ({engine}): {output_path} ({output_path.stat().st_size / 1024:.1f} KB)")
+                return str(output_path)
+        except FileNotFoundError:
+            continue
+        except Exception as e:
+            print(f"  Error compilando con {engine}: {e}")
+
+    print("  No se pudo generar PDF. Instala texlive-xetex o texlive-latex-base.")
     return ""
 
 
-def generate_epub(docs: str, lang: str) -> str:
-    """Generate ePub from markdown using pandoc."""
-    slug = re.sub(r'[^\w]', '', f"{lang}_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+def generate_epub(docs: str, lang: str = "es") -> str:
+    """Generate ePub from Markdown content."""
+    lang_name = {"es": "Espanol", "en": "English"}.get(lang, lang)
+    title_match = re.search(r"^#\s+(.+)$", docs, re.MULTILINE)
+    title = title_match.group(1) if title_match else f"Documento {lang_name}"
 
-    output_dir = OUTPUT_DIR / "epub"
+    output_dir = Path("output") / "epub"
     output_dir.mkdir(parents=True, exist_ok=True)
+    slug = re.sub(r"[^\w]", "", f"{lang}_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
     output_path = output_dir / f"{slug}.epub"
 
-    if not shutil_which("pandoc"):
-        print("  ⚠️  pandoc no disponible para ePub generation")
+    def esc(text):
+        return (text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace('"', "&quot;").replace("'", "&apos;"))
+
+    # Build HTML chapters from markdown
+    chapters_html = []
+    current_h1 = ""
+    current_content = []
+
+    for line in docs.split("\n"):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("# "):
+            if current_h1:
+                chapters_html.append((current_h1, current_content))
+            current_h1 = esc(stripped[2:])
+            current_content = []
+        elif stripped.startswith("## "):
+            if current_h1 and not current_content:
+                current_content.append(f"<h2>{esc(stripped[3:])}</h2>")
+            else:
+                current_content.append(f"<h3>{esc(stripped[3:])}</h3>")
+        elif stripped.startswith("### "):
+            current_content.append(f"<h4>{esc(stripped[4:])}</h4>")
+        elif stripped.startswith("- ") or stripped.startswith("* "):
+            current_content.append(f"<li>{esc(stripped[2:])}</li>")
+        elif stripped.startswith("> "):
+            current_content.append(f"<blockquote>{esc(stripped[2:])}</blockquote>")
+        elif stripped.startswith("**") and "**" in stripped[2:]:
+            parts = stripped.split("**")
+            line_html = ""
+            for i, p in enumerate(parts):
+                if i % 2 == 1:
+                    line_html += f"<strong>{esc(p)}</strong>"
+                else:
+                    line_html += esc(p)
+            current_content.append(f"<p>{line_html}</p>")
+        elif stripped:
+            current_content.append(f"<p>{esc(stripped)}</p>")
+
+    if current_h1:
+        chapters_html.append((current_h1, current_content))
+
+    # Wrap list items in <ul>
+    for i, (h1, content) in enumerate(chapters_html):
+        wrapped = []
+        in_list = False
+        for item in content:
+            if item.startswith("<li>"):
+                if not in_list:
+                    wrapped.append("<ul>")
+                    in_list = True
+                wrapped.append(item)
+            else:
+                if in_list:
+                    wrapped.append("</ul>")
+                    in_list = False
+                wrapped.append(item)
+        if in_list:
+            wrapped.append("</ul>")
+        chapters_html[i] = (h1, wrapped)
+
+    container_xml = """<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>"""
+
+    style_css = """body { font-family: sans-serif; line-height: 1.6; color: #1a1a2e; }
+h1 { color: #1a1a2e; border-bottom: 2px solid #4a90d9; padding-bottom: 8px; }
+h2 { color: #1a1a2e; margin-top: 24px; }
+h3 { color: #333; }
+p { margin: 8px 0; }
+ul { margin: 8px 0; }
+li { margin: 4px 0; }
+blockquote { border-left: 4px solid #4a90d9; padding-left: 16px; color: #666; margin: 16px 0; }
+a { color: #4a90d9; }
+@page { margin: 2cm; }"""
+
+    opf_parts = ['<?xml version="1.0" encoding="UTF-8"?>']
+    opf_parts.append('<package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="BookId">')
+    opf_parts.append('<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">')
+    opf_parts.append(f'<dc:title>{esc(title)}</dc:title>')
+    opf_parts.append(f'<dc:language>{lang}</dc:language>')
+    opf_parts.append('<dc:creator>AIIA-NTBLM-Factory v1.0</dc:creator>')
+    opf_parts.append('</metadata>')
+    opf_parts.append('<manifest>')
+    opf_parts.append('<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>')
+    opf_parts.append('<item id="style" href="style.css" media-type="text/css"/>')
+    for i, (h1, _) in enumerate(chapters_html):
+        ch_id = f"ch{i+1:02d}"
+        ch_file = f"ch{i+1:02d}.xhtml"
+        opf_parts.append(f'<item id="{ch_id}" href="{ch_file}" media-type="application/xhtml+xml"/>')
+    opf_parts.append('</manifest>')
+    opf_parts.append('<spine>')
+    opf_parts.append('<itemref idref="ncx"/>')
+    for i in range(len(chapters_html)):
+        opf_parts.append(f'<itemref idref="ch{i+1:02d}"/>')
+    opf_parts.append('</spine>')
+    opf_parts.append('</package>')
+
+    ncx_parts = ['<?xml version="1.0" encoding="UTF-8"?>']
+    ncx_parts.append('<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">')
+    ncx_parts.append(f'<docTitle><text>{esc(title)}</text></docTitle>')
+    ncx_parts.append('<docAuthor>AIIA-NTBLM-Factory v1.0</docAuthor>')
+    ncx_parts.append('<navMap>')
+    for i, (h1, _) in enumerate(chapters_html):
+        ncx_parts.append(f'<navPoint id="nav{i+1}" playOrder="{i+1}">')
+        ncx_parts.append(f'<navLabel><text>{esc(h1)}</text></navLabel>')
+        ncx_parts.append(f'<content src="ch{i+1:02d}.xhtml"/>')
+        ncx_parts.append('</navPoint>')
+    ncx_parts.append('</navMap>')
+    ncx_parts.append('</ncx>')
+
+    with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("META-INF/container.xml", container_xml)
+        zf.writestr("OEBPS/style.css", style_css)
+        zf.writestr("OEBPS/content.opf", "\n".join(opf_parts))
+        zf.writestr("OEBPS/toc.ncx", "\n".join(ncx_parts))
+        for i, (h1, content) in enumerate(chapters_html):
+            ch_html = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>{esc(h1)}</title><meta charset="UTF-8"/></head>
+<body>
+<h1>{esc(h1)}</h1>
+{"".join(content)}
+</body>
+</html>"""
+            zf.writestr(f"OEBPS/ch{i+1:02d}.xhtml", ch_html)
+
+    if output_path.stat().st_size > 500:
+        print(f"  ePub generado: {output_path} ({output_path.stat().st_size / 1024:.1f} KB)")
+        return str(output_path)
+    else:
+        print("  Error generando ePub")
         return ""
 
-    # Write markdown to temp file
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False, encoding="utf-8") as f:
-        f.write(docs)
-        md_file = Path(f.name)
 
-    try:
-        cmd = [
-            "pandoc", str(md_file),
-            "-o", str(output_path),
-            "--toc",
-            "--standalone",
-            "-V", f"lang={lang}",
-        ]
-
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-
-        if proc.returncode == 0 and output_path.exists():
-            print(f"  📖 ePub generado: {output_path}")
-            return str(output_path)
-        else:
-            print(f"  ❌ ePub fallo: {proc.stderr[:200]}")
-            return ""
-    finally:
-        md_file.unlink(missing_ok=True)
+def check_pdf_metadata(pdf_path: str) -> Dict:
+    """Check PDF metadata and basic validity."""
+    p = Path(pdf_path)
+    if not p.exists():
+        return {"valid": False, "error": "File not found"}
+    size_kb = p.stat().st_size / 1024
+    is_pdf = p.read_bytes()[:5] == b"%PDF-"
+    return {
+        "valid": is_pdf and size_kb > 10,
+        "size_kb": round(size_kb, 1),
+        "filename": p.name,
+        "pages": "unknown",
+    }
 
 
-def test_pdf_generation():
-    """Quick test of PDF generation."""
+if __name__ == "__main__":
     print("=== PDF Designer Test ===")
-    print(f"  pandoc available: {bool(shutil_which('pandoc'))}")
-    print(f"  wkhtmltopdf available: {bool(shutil_which('wkhtmltopdf'))}")
-    print(f"  weasyprint available: {bool(shutil_which('weasyprint'))}")
-    print(f"  pdflatex available: {bool(shutil_which('pdflatex'))}")
-
-    sample_docs = """# Documento de Prueba
+    sample = """# Documento de Prueba
 
 ## Introduccion
 Este es un documento de prueba del sistema AIIA-NTBLM-Factory.
@@ -151,377 +347,10 @@ Este es un documento de prueba del sistema AIIA-NTBLM-Factory.
 ## Conclusión
 El documento de prueba funciona correctamente.
 """
+    print("\n  Probando PDF desktop...")
+    result = generate_pdf(sample, None, "es", "desktop")
+    print(f"    OK: {result}" if result else "    FAIL: no se genero PDF")
 
-    print("\n  📄 Probando generacion de PDF...")
-    result = generate_pdf(sample_docs, [], lang="es", fmt="desktop")
-    if result:
-        print(f"    ✅ Exito: {result}")
-    else:
-        print("    ❌ No se pudo generar PDF con ningun metodo disponible")
-
-    print("\n  📖 Probando generacion de ePub...")
-    epub = generate_epub(sample_docs, lang="es")
-    if epub:
-        print(f"    ✅ ePub: {epub}")
-    else:
-        print("    ❌ No se pudo generar ePub")
-
-
-# =============================================================================
-# Internal helpers
-# =============================================================================
-
-def shutil_which(name: str) -> bool:
-    """Check if a command is available."""
-    import shutil
-    return shutil.which(name) is not None
-
-
-def pandoc_html_to_pdf(docs: str, output: Path, lang: str, title: str) -> tuple:
-    """Method 1: pandoc → HTML → wkhtmltopdf."""
-    try:
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".html", delete=False) as f:
-            html_file = Path(f.name)
-
-        cmd_pandoc = ["pandoc", "-f", "markdown", "-t", "html5", "-s", "-o", str(html_file)]
-        proc1 = subprocess.run(cmd_pandoc, input=docs.encode(), capture_output=True, timeout=30)
-        if proc1.returncode != 0:
-            return False, "pandoc HTML conversion failed"
-
-        cmd_wkhtml = ["wkhtmltopdf", "--quiet", "--print-media-type", str(html_file), str(output)]
-        proc2 = subprocess.run(cmd_wkhtml, capture_output=True, timeout=60)
-        html_file.unlink(missing_ok=True)
-
-        if proc2.returncode == 0 and output.exists():
-            return True, "wkhtmltopdf"
-        return False, f"wkhtmltopdf failed: {proc2.stderr[:200]}"
-    except Exception as e:
-        return False, str(e)
-
-
-def pandoc_direct_pdf(docs: str, output: Path, lang: str, title: str) -> tuple:
-    """Method 2: pandoc direct to PDF (needs LaTeX)."""
-    try:
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False, encoding="utf-8") as f:
-            f.write(docs)
-            md_file = Path(f.name)
-
-        cmd = [
-            "pandoc", str(md_file),
-            "-o", str(output),
-            "--pdf-engine=pdflatex",
-            "-V", f"lang={lang}",
-            "-V", "geometry:margin=2cm",
-        ]
-
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-        md_file.unlink(missing_ok=True)
-
-        if proc.returncode == 0 and output.exists():
-            return True, "LaTeX"
-        return False, f"pandoc LaTeX failed: {proc.stderr[:300]}"
-    except Exception as e:
-        return False, str(e)
-
-
-def pandoc_html_weasyprint(docs: str, output: Path, lang: str, title: str) -> tuple:
-    """Method 3: pandoc → HTML → weasyprint."""
-    try:
-        # Pandoc to HTML with embedded CSS
-        html_content = f"""<!DOCTYPE html>
-<html lang="{lang}">
-<head>
-<meta charset="UTF-8">
-<style>
-  body {{ font-family: 'DejaVu Sans', sans-serif; line-height: 1.6; color: #1a1a2e; }}
-  h1 {{ color: #1a1a2e; border-bottom: 2px solid #4a90d9; padding-bottom: 8px; }}
-  h2 {{ color: #1a1a2e; margin-top: 24px; }}
-  h3 {{ color: #333; }}
-  p {{ margin: 8px 0; }}
-  ul {{ margin: 8px 0; }}
-  li {{ margin: 4px 0; }}
-  blockquote {{ border-left: 4px solid #4a90d9; padding-left: 16px; color: #666; margin: 16px 0; }}
-  code {{ background: #f5f5f5; padding: 2px 6px; border-radius: 3px; }}
-  a {{ color: #4a90d9; }}
-  @page {{ size: A4; margin: 2cm; @bottom-center {{ content: counter(page); }} }}
-</style>
-</head>
-<body>
-{docs}
-</body>
-</html>"""
-
-        cmd = ["weasyprint", "-", str(output)]
-        proc = subprocess.run(cmd, input=html_content.encode(), capture_output=True, text=True, timeout=60)
-
-        if proc.returncode == 0 and output.exists():
-            return True, "weasyprint"
-        return False, f"weasyprint failed: {proc.stderr[:200]}"
-    except Exception as e:
-        return False, str(e)
-
-
-def simple_html_to_pdf(docs: str, output: Path, lang: str, title: str, fmt: str) -> tuple:
-    """Method 4: Convert markdown to simple HTML, then weasyprint."""
-    try:
-        # Simple markdown to HTML converter
-        html_body = markdown_to_html(docs)
-
-        page_size = "A4" if fmt == "desktop" else "A5"
-        margin = "2cm" if fmt == "desktop" else "1.2cm"
-        font_size = "12pt" if fmt == "desktop" else "10pt"
-
-        html_content = f"""<!DOCTYPE html>
-<html lang="{lang}">
-<head>
-<meta charset="UTF-8">
-<style>
-  @page {{ size: {page_size}; margin: {margin}; }}
-  body {{ font-family: 'DejaVu Sans', sans-serif; font-size: {font_size}; line-height: 1.5; color: #1a1a2e; margin: 0; padding: 0; }}
-  h1 {{ color: #1a1a2e; font-size: 1.8em; border-bottom: 2px solid #4a90d9; padding-bottom: 6px; margin-top: 24px; }}
-  h2 {{ color: #1a1a2e; font-size: 1.3em; margin-top: 20px; }}
-  h3 {{ color: #333; font-size: 1.1em; }}
-  p {{ margin: 6px 0; }}
-  ul {{ margin: 6px 0; padding-left: 24px; }}
-  li {{ margin: 3px 0; }}
-  blockquote {{ border-left: 3px solid #4a90d9; padding-left: 12px; color: #666; margin: 12px 0; }}
-  code {{ background: #f5f5f5; padding: 1px 4px; border-radius: 2px; font-size: 0.9em; }}
-  a {{ color: #4a90d9; text-decoration: none; }}
-  @bottom-center {{ content: counter(page); font-size: 0.8em; color: #888; }}
-</style>
-<title>{title}</title>
-</head>
-<body>
-<div style="text-align: center; margin-bottom: 32px; color: #888; font-size: 0.9em;">
-  AIIA-NTBLM-Factory v1.0 | {title}
-</div>
-{html_body}
-</body>
-</html>"""
-
-        cmd = ["weasyprint", "-", str(output)]
-        proc = subprocess.run(cmd, input=html_content.encode(), capture_output=True, text=True, timeout=60)
-
-        if proc.returncode == 0 and output.exists():
-            return True, "HTML+weasyprint"
-        return False, f"weasyprint failed: {proc.stderr[:200]}"
-    except Exception as e:
-        return False, str(e)
-
-
-def markdown_to_html(md: str) -> str:
-    """Simple markdown to HTML converter."""
-    lines = md.split("\n")
-    html_lines = []
-    in_list = False
-    list_type = None
-
-    for line in lines:
-        stripped = line.strip()
-
-        # Skip empty lines
-        if not stripped:
-            if in_list:
-                if list_type == "ul":
-                    html_lines.append("</ul>")
-                else:
-                    html_lines.append("</ol>")
-                in_list = False
-            continue
-
-        # Headers
-        if stripped.startswith("# "):
-            html_lines.append(f"<h1>{escape_html(stripped[2:])}</h1>")
-            continue
-        elif stripped.startswith("## "):
-            html_lines.append(f"<h2>{escape_html(stripped[3:])}</h2>")
-            continue
-        elif stripped.startswith("### "):
-            html_lines.append(f"<h3>{escape_html(stripped[4:])}</h3>")
-            continue
-
-        # Lists
-        if stripped.startswith("- ") or stripped.startswith("* "):
-            if not in_list:
-                html_lines.append("<ul>")
-                in_list = True
-                list_type = "ul"
-            html_lines.append(f"<li>{inline_markdown(stripped[2:])}</li>")
-            continue
-        elif stripped.startswith("1. "):
-            if not in_list:
-                html_lines.append("<ol>")
-                in_list = True
-                list_type = "ol"
-            html_lines.append(f"<li>{inline_markdown(stripped[3:])}</li>")
-            continue
-
-        # Paragraphs
-        if stripped and not in_list:
-            html_lines.append(f"<p>{inline_markdown(stripped)}</p>")
-
-    # Close any open list
-    if in_list:
-        if list_type == "ul":
-            html_lines.append("</ul>")
-        else:
-            html_lines.append("</ol>")
-
-    return "\n".join(html_lines)
-
-
-def inline_markdown(text: str) -> str:
-    """Convert inline markdown to HTML."""
-    # Bold
-    text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
-    # Italic
-    text = re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
-    # Code
-    text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
-    # Links
-    text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', text)
-    # Escape HTML entities in remaining text
-    text = escape_html(text)
-    return text
-
-
-def escape_html(text: str) -> str:
-    """Escape HTML special characters."""
-    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
-
-
-def reportlab_pdf(docs: str, output: Path, lang: str, title: str, fmt: str) -> tuple:
-    """Method 5: Generate PDF using reportlab (pure Python)."""
-    try:
-        from reportlab.lib.pagesizes import A4, A5
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.units import cm
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, ListFlowable, ListItem, HRFlowable
-        from reportlab.lib import colors
-        from reportlab.lib.enums import TA_LEFT, TA_CENTER
-        from reportlab.pdfbase import pdfmetrics
-        from reportlab.pdfbase.ttfonts import TTFont
-
-        page_size = A4 if fmt == "desktop" else A5
-        margin = 2*cm if fmt == "desktop" else 1.5*cm
-
-        doc = SimpleDocTemplate(
-            str(output),
-            pagesize=page_size,
-            leftMargin=margin,
-            rightMargin=margin,
-            topMargin=2*cm,
-            bottomMargin=2*cm,
-        )
-
-        styles = getSampleStyleSheet()
-        title_style = ParagraphStyle(
-            "CustomTitle",
-            parent=styles["Title"],
-            textColor=colors.HexColor("#1a1a2e"),
-            fontSize=24 if fmt == "desktop" else 18,
-            spaceAfter=20,
-            alignment=TA_CENTER,
-        )
-
-        h2_style = ParagraphStyle(
-            "CustomH2",
-            parent=styles["Heading2"],
-            textColor=colors.HexColor("#1a1a2e"),
-            fontSize=16 if fmt == "desktop" else 12,
-            spaceBefore=16,
-            spaceAfter=8,
-        )
-
-        h3_style = ParagraphStyle(
-            "CustomH3",
-            parent=styles["Heading3"],
-            textColor=colors.HexColor("#333333"),
-            fontSize=13 if fmt == "desktop" else 10,
-            spaceBefore=10,
-            spaceAfter=6,
-        )
-
-        body_style = ParagraphStyle(
-            "CustomBody",
-            parent=styles["Normal"],
-            fontSize=11 if fmt == "desktop" else 9,
-            leading=16 if fmt == "desktop" else 13,
-            spaceAfter=8,
-        )
-
-        bullet_style = ParagraphStyle(
-            "BulletBody",
-            parent=body_style,
-            leftIndent=20,
-            bulletIndent=10,
-        )
-
-        story = []
-
-        # Parse markdown and build flowables
-        lines = docs.split("\n")
-        for line in lines:
-            stripped = line.strip()
-            if not stripped:
-                continue
-
-            if stripped.startswith("# "):
-                story.append(Paragraph(escape_latex(stripped[2:]), title_style))
-                story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#4a90d9")))
-                story.append(Spacer(1, 12))
-            elif stripped.startswith("## "):
-                story.append(Paragraph(escape_latex(stripped[3:]), h2_style))
-                story.append(Spacer(1, 6))
-            elif stripped.startswith("### "):
-                story.append(Paragraph(escape_latex(stripped[4:]), h3_style))
-                story.append(Spacer(1, 4))
-            elif stripped.startswith("- ") or stripped.startswith("* "):
-                text = inline_to_reportlab(stripped[2:])
-                story.append(Paragraph(text, bullet_style, bulletText="•"))
-            else:
-                text = inline_to_reportlab(stripped)
-                story.append(Paragraph(text, body_style))
-
-        doc.build(story)
-
-        if output.exists():
-            return True, "reportlab"
-        return False, "reportlab build failed"
-    except ImportError:
-        return False, "reportlab not installed"
-    except Exception as e:
-        return False, str(e)
-
-
-def escape_latex(text: str) -> str:
-    """Escape LaTeX special characters for reportlab Paragraph."""
-    return (text
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("{", "{")
-        .replace("}", "}")
-        .replace("#", "#")
-        .replace("$", "$")
-        .replace("%", "%")
-        .replace("_", "_")
-        .replace("~", "~")
-        .replace("^", "^")
-        .replace("\\", "")
-    )
-
-
-def inline_to_reportlab(text: str) -> str:
-    """Convert inline markdown to reportlab markup."""
-    # Bold
-    text = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", text)
-    # Italic
-    text = re.sub(r"\*(.+?)\*", r"<i>\1</i>", text)
-    # Code
-    text = re.sub(r"`([^`]+)`", r"<font face='Courier'>\1</font>", text)
-    return escape_latex(text)
-
-
-if __name__ == "__main__":
-    test_pdf_generation()
+    print("\n  Probando ePub...")
+    epub = generate_epub(sample, "es")
+    print(f"    OK: {epub}" if epub else "    FAIL: no se genero ePub")
