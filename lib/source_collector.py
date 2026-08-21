@@ -53,6 +53,7 @@ def search_videos(query: str, max_results: int = 10) -> List[Dict]:
         return []
 
     try:
+        # Explicitly pass developerKey as keyword argument to avoid ADC
         youtube = build(
             "youtube",
             "v3",
@@ -153,6 +154,7 @@ def is_youtube_url(url: str) -> bool:
 
 def extract_video_id(url: str) -> Optional[str]:
     """Extract YouTube video ID from URL."""
+    from urllib.parse import parse_qs
     parsed = urlparse(url)
 
     if parsed.hostname == "youtu.be":

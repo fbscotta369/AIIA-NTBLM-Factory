@@ -32,18 +32,20 @@ ROOT = Path(__file__).parent.parent.resolve()
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", "")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 
-# Voice configurations
+# Voice configurations — VERIFIED with fbscotta account (2026-08-21):
+# Laura: FGY2WhTYpPnrIDTdsKH5 (ES LatAm — "Enthusiast, Quirky Attitude")
+# Alice: Xb7hH8MSUJpSbSDYk0k2 (EN British — "Clear, Engaging Educator")
 VOICE_CONFIGS = {
     "es": {
         "name": "Spanish (Latin American) - Female",
-        "voice_id": "XbQXCjpM9k00zzSX8vD7",
+        "voice_id": "FGY2WhTYpPnrIDTdsKH5",  # Laura
         "language": "es",
         "stability": 0.4,
         "similarity_boost": 0.75,
     },
     "en": {
         "name": "English (British) - Female",
-        "voice_id": "Thq69S6I3X0H6kVrBU9P",
+        "voice_id": "Xb7hH8MSUJpSbSDYk0k2",  # Alice
         "language": "en",
         "stability": 0.4,
         "similarity_boost": 0.75,
@@ -230,13 +232,17 @@ def generate_audio(text: str, lang: str = "es", voice: str = "female") -> Dict:
     voice_config = VOICE_CONFIGS.get(lang, VOICE_CONFIGS["en"])
 
     try:
+        import elevenlabs
         client = elevenlabs.ElevenLabs(api_key=ELEVENLABS_API_KEY)
-        audio = client.generate(
+
+        # ElevenLabs v2.x: text_to_speech.convert() returns generator
+        audio_bytes = b""
+        for chunk in client.text_to_speech.convert(
+            voice_id=voice_config["voice_id"],
             text=text,
-            voice=voice_config["voice_id"],
-            model="eleven_multilingual_v2",
-            voice_settings={"stability": voice_config.get("stability", 0.4), "similarity_boost": voice_config.get("similarity_boost", 0.75)},
-        )
+            model_id="eleven_multilingual_v2",
+        ):
+            audio_bytes += chunk
 
         lang_dir = ROOT / "output" / "audio"
         lang_dir.mkdir(parents=True, exist_ok=True)
@@ -244,7 +250,7 @@ def generate_audio(text: str, lang: str = "es", voice: str = "female") -> Dict:
         filepath = lang_dir / filename
 
         with open(filepath, "wb") as f:
-            f.write(audio)
+            f.write(audio_bytes)
 
         duration = get_audio_duration(filepath)
         print(f"  Audio generado: {filepath} ({duration:.1f}s)")
@@ -286,9 +292,9 @@ def generate_video(slides: List[Dict], audio: Optional[Dict], lang: str = "es") 
         concat_file = temp_dir / "concat.txt"
         with open(concat_file, "w") as f:
             for i in range(num_slides):
-                f.write(f"file '{temp_dir / f'slide_{i:03d}.png'}.resolve()'\\n")
-                f.write(f"duration {slide_duration:.3f}\\n")
-            f.write(f"file '{temp_dir / f'slide_{num_slides-1:03d}.png'}.resolve()'\\n")
+                f.write(f"file '{temp_dir / f'slide_{i:03d}.png'}.resolve()'\n")
+                f.write(f"duration {slide_duration:.3f}\n")
+            f.write(f"file '{temp_dir / f'slide_{num_slides-1:03d}.png'}.resolve()'\n")
 
         output_path = ROOT / "output" / "video" / f"{lang}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -470,6 +476,6 @@ if __name__ == "__main__":
     for inf in infographics:
         print(f"    - {inf['title']} ({len(inf['svg'])} bytes SVG)")
 
-    print(f"\n  Generacion de audio (demo sin API key):")
-    result = generate_audio("Texto de prueba para narracion.", lang="es", voice="female")
+    print(f"\n  Generacion de audio (con ElevenLabs):")
+    result = generate_audio("Texto de prueba para narracion en espanol latinoamericano.", lang="es", voice="female")
     print(f"    Resultado: {json.dumps(result, indent=2, ensure_ascii=False)}")
