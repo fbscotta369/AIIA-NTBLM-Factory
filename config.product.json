@@ -1,0 +1,118 @@
+{
+  "product": "AIIA-NTBLM-Factory",
+  "version": "1.0",
+  "description": "NotebookLM-powered digital product factory — generates sellable PDFs, ePub, audio, video, quiz from YouTube sources + NotebookLM deep analysis",
+  "owner": "AIIA Labs family",
+  "owner_github": "fbscotta369",
+  "google_account": "fbscotta@gmail.com",
+  "repo": "https://github.com/fbscotta369/AIIA-NTBLM-Factory.git",
+
+  "runtime": {
+    "python_version": "3.11+",
+    "browser_automation": "Playwright (Chromium)",
+    "tts_provider": "ElevenLabs API",
+    "llm_provider": "OpenRouter",
+    "pdf_engine": "LaTeX (texlive) + pandoc + weasyprint + reportlab"
+  },
+
+  "languages": {
+    "es": {
+      "name": "Spanish (Latin American)",
+      "voice_gender": "female",
+      "accent": "latam",
+      "tts_voice_id": "XbQXCjpM9k00zzSX8vD7",
+      "locale": "es-LA"
+    },
+    "en": {
+      "name": "English (British)",
+      "voice_gender": "female",
+      "accent": "british",
+      "tts_voice_id": "Thq69S6I3X0H6kVrBU9P",
+      "locale": "en-GB"
+    }
+  },
+
+  "output": {
+    "directory": "output",
+    "structure": {
+      "pdf_desktop": "pdf_desktop/<lang>_<slug>_desktop.pdf",
+      "pdf_mobile": "pdf_mobile/<lang>_<slug>_mobile.pdf",
+      "epub": "epub/<lang>_<slug>.epub",
+      "audio": "audio/<lang>_<slug>.mp3",
+      "video": "video/<lang>_<slug>.mp4",
+      "quiz": "quiz/<lang>_<slug>_quiz.md",
+      "metadata": "metadata.json"
+    }
+  },
+
+  "quality_checks": {
+    "completeness": {
+      "description": "PDF has introduction + body + conclusion + appendix",
+      "severity": "critical"
+    },
+    "coherence": {
+      "description": "Sections flow logically, no contradictions",
+      "severity": "high"
+    },
+    "visual_quality": {
+      "description": "Infographics referenced and load correctly",
+      "severity": "high"
+    },
+    "audio_quality": {
+      "description": "Audio duration matches expected narration time",
+      "severity": "medium"
+    },
+    "mobile_friendly": {
+      "description": "PDF readable on small screens",
+      "severity": "medium"
+    },
+    "branding_consistency": {
+      "description": "Style, fonts, colors consistent across all products",
+      "severity": "medium"
+    }
+  },
+
+  "phases": [
+    {"name": "source_collection", "description": "YouTube Data API search"}
+    , {"name": "notebooklm_analysis", "description": "Browser automation: login, create notebook, add sources, extract"}
+    , {"name": "content_generation", "description": "Docs, slides, infographics, audio, video, quiz — bilingual"}
+    , {"name": "pdf_design", "description": "Desktop PDF + mobile PDF + ePub"}
+    , {"name": "quality_control", "description": "6-point verification"}
+    , {"name": "export", "description": "Bundle ready to sell"}
+  ],
+
+  "dependencies": {
+    "python_packages": [
+      "playwright",
+      "elevenlabs",
+      "openai",
+      "google-api-python-client",
+      "pydub",
+      "reportlab"
+    ],
+    "system_packages": [
+      "texlive-latex-base",
+      "texlive-latex-extra",
+      "texlive-fonts-recommended",
+      "ffmpeg",
+      "pandoc",
+      "weasyprint (optional)",
+      "wkhtmltopdf (optional)"
+    ]
+  },
+
+  "environment_variables": {
+    "YOUTUBE_API_KEY": {"description": "YouTube Data API v3 key", "required": true},
+    "ELEVENLABS_API_KEY": {"description": "ElevenLabs API key for TTS", "required": true},
+    "OPENROUTER_API_KEY": {"description": "OpenRouter API key for LLM content generation", "required": true},
+    "NOTEBOOKLM_EMAIL": {"description": "Google email for NotebookLM login", "default": "fbscotta@gmail.com"},
+    "NOTEBOOKLM_PASSWORD": {"description": "Google password (NOT recommended; use cookies instead)", "required": false},
+    "NOTEBOOKLM_APP_PASSWORD": {"description": "Google app-password for 2FA accounts (RECOMMENDED)", "required": false},
+    "GOOGLE_SESSION_COOKIE": {"description": "Base64-encoded Playwright storage_state JSON for session persistence", "required": false}
+  },
+
+  "credentials_note": "DO NOT store Google password in plain text. Use browser cookie session persistence or app-password. All real credentials must be in .env (gitignored), NEVER committed to repo.",
+
+  "last_updated": "2026-08-21",
+  "status": "phase1_complete"
+}

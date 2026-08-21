@@ -1,0 +1,45 @@
+# AIIA-NTBLM-Factory — Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core
+python-dotenv>=1.0.0
+requests>=2.31.0
+pydantic>=2.0.0
+
+# Browser Automation (for NotebookLM web interface)
+playwright>=1.40.0
+
+# YouTube Data API
+google-api-python-client>=2.100.0
+google-auth>=2.23.0
+
+# AI / LLM
+openai>=1.6.0
+anthropic>=0.30.0
+
+# Text-to-Speech
+elevenlabs>=1.14.0
+
+# PDF Generation (LaTeX-based via subprocess)
+# Requires system: texlive-latex-base texlive-fonts-recommended texlive-latex-extra
+
+# Image Generation
+pillow>=10.0.0
+qrcode>=7.4.0
+
+# Video
+# Requires system: ffmpeg
+
+# Markdown to ePub
+# Requires system: pandoc
+
+# Testing
+pytest>=7.4.0
+pytest-xdist>=3.5.0
+
+# Quality control
+PIL>=10.0.0
+
+# Utils
+tqdm>=4.66.0
+slugify>=0.0.1
