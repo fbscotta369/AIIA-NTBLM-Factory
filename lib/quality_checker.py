@@ -86,6 +86,7 @@ class QualityChecker:
         self.checks_ran = list(results.keys())
         self.checks_passed = sum(1 for r in results.values() if r.get("passed"))
         self.checks_failed = len(results) - self.checks_passed
+        self._last_results = results
 
         return results
 
@@ -493,7 +494,7 @@ class QualityChecker:
                     "message": result.get("message", ""),
                     "severity": result.get("severity", "low"),
                 }
-                for name, result in zip(self.checks_ran, self.checks_passed)
+                for name, result in self._last_results.items()
             },
             "all_passed": self.checks_failed == 0,
         }
