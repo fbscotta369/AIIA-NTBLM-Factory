@@ -36,8 +36,8 @@ YOUTUBE_API_VERSION = "v3"
 # ElevenLabs (TTS)
 # =============================================================================
 # Voice IDs for female voices
-ELEVENLABS_VOICE_ES = "XbQXCjpM9k00zzSX8vD7"  # María (LatAm Spanish, female)
-ELEVENLABS_VOICE_EN = "Thq69S6I3X0H6kVrBU9P"  # Alice (British English, female)
+ELEVENLABS_VOICE_ES = "FGY2WhTYpPnrIDTdsKH5"  # Laura (LatAm Spanish, female)
+ELEVENLABS_VOICE_EN = "Xb7hH8MSUJpSbSDYk0k2"  # Alice (British English, female)
 
 # =============================================================================
 # Language Configuration

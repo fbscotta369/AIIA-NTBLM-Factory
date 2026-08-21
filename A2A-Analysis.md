@@ -76,8 +76,8 @@ Uses `lib/content_generator.py`. Genera contenido en 2 idiomas (ES LatAm + EN Br
 6. `generate_quiz(analysis, lang)` → Quiz questions [{type, question, options, answer, explanation}]
 
 **Voice config:**
-- ES: ElevenLabs XbQXCjpM9k00zzSX8vD7 (María, LatAm, female)
-- EN: ElevenLabs Thq69S6I3X0H6kVrBU9P (Alice, British, female)
+- ES: ElevenLabs FGY2WhTYpPnrIDTdsKH5 (Laura, LatAm, female)
+- EN: ElevenLabs Xb7hH8MSUJpSbSDYk0k2 (Alice, British, female)
 - Model: eleven_multilingual_v2
 
 **Status:** ✅ 4/5 funciones probadas OK (audio requiere API key)

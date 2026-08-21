@@ -146,8 +146,8 @@ Takes NotebookLM analysis JSON and generates content in 2 languages.
 - `generate_quiz(analysis, lang)` → Dict {questions, total, language, generated_at}
 
 **Voice config:**
-- ES: ElevenLabs voice XbQXCjpM9k00zzSX8vD7 (María, LatAm Spanish, female)
-- EN: ElevenLabs voice Thq69S6I3X0H6kVrBU9P (Alice, British English, female)
+- ES: ElevenLabs voice FGY2WhTYpPnrIDTdsKH5 (Laura, LatAm, female)
+- EN: ElevenLabs voice Xb7hH8MSUJpSbSDYk0k2 (Alice, British, female)
 - Model: eleven_multilingual_v2 (multilingual support)
 
 ---
@@ -282,8 +282,8 @@ FACTORY_DEBUG=1  # enable debug output
 
 | Language | Voice Name | ElevenLabs ID | Gender | Accent |
 |----------|-----------|---------------|--------|--------|
-| ES (LatAm) | María | XbQXCjpM9k00zzSX8vD7 | Female | Latin American (Mexican/Argentine) |
-| EN (British) | Alice | Thq69S6I3X0H6kVrBU9P | Female | British (RP/BBC) |
+| ES (LatAm) | Laura | FGY2WhTYpPnrIDTdsKH5 | Female | Latin American (Mexican/Argentine) |
+| EN (British) | Alice | Xb7hH8MSUJpSbSDYk0k2 | Female | British (RP/BBC) |
 
 Model: `eleven_multilingual_v2` (supports both languages).
 

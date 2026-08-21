@@ -20,14 +20,14 @@
       "name": "Spanish (Latin American)",
       "voice_gender": "female",
       "accent": "latam",
-      "tts_voice_id": "XbQXCjpM9k00zzSX8vD7",
+      "tts_voice_id": "FGY2WhTYpPnrIDTdsKH5",
       "locale": "es-LA"
     },
     "en": {
       "name": "English (British)",
       "voice_gender": "female",
       "accent": "british",
-      "tts_voice_id": "Thq69S6I3X0H6kVrBU9P",
+      "tts_voice_id": "Xb7hH8MSUJpSbSDYk0k2",
       "locale": "en-GB"
     }
   },
