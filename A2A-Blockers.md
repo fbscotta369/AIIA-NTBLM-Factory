@@ -1,107 +1,89 @@
 # A2A Blockers — Bloqueos conocidos
 
 > Bloqueos que impiden el avance del sistema.
-> Updated: 2026-08-21. All times UTC-3.
+> Updated: 2026-08-21. All times UTC-3. Status: INFRAESTRUCTURA COMPLETA
 
 ---
 
 ## Blockers Activos
 
-### 🔴 BLO-01: Playwright con Google login (2FA)
-- **Severity**: Critical
-- **Swarm**: NotebookLM Client (B)
-- **Blocked by**: Google 2FA requires manual verification or app-password
-- **Impact**: Cannot automate NotebookLM login without 2FA bypass
-- **Workaround available**:
-  - Use app-password (Google allows app-specific passwords)
-  - Use browser session cookies (pre-login once, save cookies, reuse)
-  - Manual one-time login, then persist session
-- **Status**: Unblocked (workarounds identified, not yet tested)
+### 🔴 BLO-01: Credenciales NotebookLM (login a notebooklm.google.com)
+- **Severity:** Critical
+- **Swarm:** NotebookLM Client (Phase 2)
+- **Blocked by:** Google cuenta fbscotta@gmail.com requiere credenciales para login
+- **Impact:** No se puede ejecutar el pipeline completo — Phase 2 falla sin login
+- **Trabajo alrededor disponible:**
+  - Opción A: app-password de Google (recomendado si 2FA activado)
+  - Opción B: cookies de sesión guardadas (~/.aiia-ntblm/notebooklm_cookies.json o GOOGLE_SESSION_COOKIE env var)
+  - Opción C: NOTEBOOKLM_PASSWORD (no recomendado si 2FA activado)
+- **Estado:** 🔴 Blocked — credenciales no configuradas
+- **Solución requerida:** FB configura NOTEBOOKLM_APP_PASSWORD o exporta cookies de sesión al .env
 
-### 🔴 BLO-02: YouTube Data API quota
-- **Severity**: Medium
-- **Swarm**: Source Collection (A)
-- **Blocked by**: API quota limits (typically 10,000 units/day for free tier)
-- **Impact**: Cannot search many videos per day
-- **Workaround**:
-  - Cache search results in output/
-  - Use alternative: manual search + URL paste
-  - Use free tier wisely — search only once per topic
-- **Status**: Unblocked (single search per topic is acceptable)
+### 🔴 BLO-02: ElevenLabs API key (TTS)
+- **Severity:** High
+- **Swarm:** Content Generation (Phase 3 — audio)
+- **Blocked by:** ElevenLabs requiere plan de pago para uso comercial
+- **Impact:** No se puede generar audio de calidad comercial sin API key + plan paid
+- **Trabajo alrededor disponible:**
+  - Free tier disponible para pruebas (no comercial)
+  - Para uso comercial: necesitas ElevenLabs Starter ($5/mo) o Creator plan
+  - Alternativa TTS: Google Cloud TTS, Amazon Polly (pero ElevenLabs tiene mejor calidad + voces femeninas LatAm/British)
+- **Estado:** 🔴 Blocked — ELEVENLABS_API_KEY no configurada
+- **Solución requerida:** FB configura ELEVENLABS_API_KEY y plan de pago si se requiere comercial
 
-### 🔴 BLO-03: ElevenLabs API key + commercial rights
-- **Severity**: High
-- **Swarm**: Content Generation (C)
-- **Blocked by**: Need paid ElevenLabs plan for commercial use of generated audio
-- **Impact**: Cannot generate commercial-quality audio without paid plan
-- **Workaround**:
-  - Free tier available for testing (non-commercial)
-  - For commercial use: need ElevenLabs Starter ($5/mo) or Creator plan
-  - Alternative TTS: Google Cloud TTS, Amazon Polly (but ElevenLabs is preferred for female voices + LatAm/UK accents)
-- **Status**: Blocked by business decision (need paid plan)
+### 🔴 BLO-03: YouTube Data API key
+- **Severity:** High
+- **Swarm:** Source Collection (Phase 1)
+- **Blocked by:** YouTube Data API v3 requiere API key
+- **Impact:** No se puede buscar videos de YouTube automáticamente
+- **Trabajo alrededor disponible:**
+  - Free tier: 10,000 units/día — suficiente para búsquedas limitadas
+  - Alternativa: búsqueda manual + paste de URLs
+  - Caché de resultados en output/ para evitar búsquedas repetidas
+- **Estado:** 🔴 Blocked — YOUTUBE_API_KEY no configurada
+- **Solución requerida:** FB configura YOUTUBE_API_KEY en Google Cloud Console
 
-### 🟡 BLO-04: LaTeX installation (PDF generation)
-- **Severity**: Medium
-- **Swarm**: PDF Design (D)
-- **Blocked by**: texlive not installed in this environment
-- **Impact**: Cannot generate professional PDF
-- **Workaround**:
-  - Install texlive: `sudo apt-get install texlive-latex-base texlive-latex-extra texlive-fonts-recommended`
-  - Alternative: use Python-based PDF (reportlab, weasyprint — less professional than LaTeX)
-- **Status**: Unblocked (installable, not yet installed)
-
-### 🟡 BLO-05: Video generation dependencies
-- **Severity**: Medium
-- **Swarm**: Content Generation (C)
-- **Blocked by**: FFmpeg not installed; Manim needs ffmpeg + latex
-- **Impact**: Cannot generate video products
-- **Workaround**:
-  - Install ffmpeg: `sudo apt-get install ffmpeg`
-  - Use simpler video: slides exported as images + audio → ffmpeg concat
-  - Alternative: Manim for advanced animations (needs LaTeX + ffmpeg)
-- **Status**: Unblocked (installable)
-
-### 🟡 BLO-06: ePub generation
-- **Severity**: Low
-- **Swarm**: PDF Design (D)
-- **Blocked by**: pandoc not installed in this environment
-- **Impact**: Cannot generate ePub output
-- **Workaround**:
-  - Install pandoc: `sudo apt-get install pandoc`
-  - Alternative: manual ePub from HTML using ebooklib
-- **Status**: Unblocked (installable)
-
-### 🔴 BLO-07: NotebookLM login session persistence
-- **Severity**: High
-- **Swarm**: NotebookLM Client (B)
-- **Blocked by**: Browser automation session is ephemeral across runs
-- **Impact**: Must re-login every time, which is slow + may trigger 2FA
-- **Workaround**:
-  - Save browser cookies between runs (playwright context can be saved/reloaded)
-  - Use chromium persistent context: `browser.new_context(storage_state="cookies.json")`
-- **Status**: Workaround identified, not yet tested
+### 🔴 BLO-04: OpenRouter API key
+- **Severity:** Medium
+- **Swarm:** Content Generation (Phase 3 — docs, quiz)
+- **Blocked by:** LLM para generación de contenido requiere API key
+- **Impact:** Content generation puede usar datos mock/generics sin LLM
+- **Trabajo alrededor disponible:**
+  - Contenido puede generarse con datos mock para testing
+  - Para producción: necesitas OpenRouter API key
+- **Estado:** 🔴 Blocked — OPENROUTER_API_KEY no configurada
+- **Solución requerida:** FB configura OPENROUTER_API_KEY
 
 ---
 
-## Already-Handled Blockers
+## Bloqueos resueltos ✅
 
 | Id | Issue | Resolution |
-|----|-------|------------|
-| BKL-OLD-1 | No A2A files | All A2A files created |
-| BKL-OLD-2 | No Google API key identified | Identified + ready to use |
-| BKL-OLD-3 | No directory structure | Factory structure created |
+|-----|-------|------------|
+| BLO-OLD-1 | Infraestructura A2A sin archivos | 11 A2A files creados (Quickstart, WIP, Tasks, Technical, WHAT, Blockers, Bugs, Fixes, Analysis, Tests, Production-Metadata) |
+| BLO-OLD-2 | factory.py sin código | factory.py creado con 6 fases A→B→Z, probado y documentado |
+| BLO-OLD-3 | lib/ sin módulos | 5 módulos creados: source_collector.py, notebooklm_client.py, content_generator.py, pdf_designer.py, quality_checker.py |
+| BLO-OLD-4 | Playwright no instalado | Playwright instalado + Chromium descargado |
+| BLO-OLD-5 | Content Generator sin funciones | 4/5 funciones creadas y probadas: docs, slides, infographics, quiz (audio requiere API key) |
+| BLO-OLD-6 | PDF Designer sin funciones | PDF Designer creado, reportlab funciona como fallback |
+| BLO-OLD-7 | Quality Checker sin checks | Quality Checker creado con 6 checks probados |
+| BLO-OLD-8 | Sin .env.example | .env.example creado con todas las credenciales documentadas |
+| BLO-OLD-9 | Sin .gitignore | .gitignore creado (protege .env, output/, Python artifacts, LaTeX artifacts) |
+| BLO-OLD-10 | Sin requirements.txt | requirements.txt creado con todas las Python dependencies |
 
 ---
 
-## Resolution Plan
+## Resolución plan
 
-Priority order for unblocking (by severity):
+Orden de prioridad para desbloquear (por severidad):
 
-1. **BLO-03** (ElevenLabs paid plan) — business decision, owner action needed
-2. **BLO-01 / BLO-07** (2FA + session persistence) — test app-password approach first
-3. **BLO-02** (API quota) — not blocking for single-topic test
-4. **BLO-04 / BLO-05 / BLO-06** (system deps) — install via apt
+1. **BLO-01 (NotebookLM credentials)** — crítico, bloquea todo el pipeline
+2. **BLO-02 (ElevenLabs API key)** — alto, requerido para audio comercial
+3. **BLO-03 (YouTube API key)** — alto, requerido para source collection
+4. **BLO-04 (OpenRouter API key)** — medio, requerido para LLM content
+
+FB debe configurar las 4 credenciales en .env antes de ejecutar el pipeline.
 
 ---
 
-> Updated: 2026-08-21. Next review: after first NotebookLM login attempt.
+> Updated: 2026-08-21. Status: INFRAESTRUCTURA COMPLETA. Next review: after credentials configured + first pipeline run.

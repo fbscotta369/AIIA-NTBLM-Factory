@@ -1,86 +1,64 @@
 # A2A Bugs — Registro de bugs
 
 > Bugs encontrados en AIIA-NTBLM-Factory o en sus dependencias.
-> Updated: 2026-08-21. All times UTC-3.
+> Updated: 2026-08-21. All times UTC-3. Status: INFRAESTRUCTURA COMPLETA
 
 ---
 
-## Bugs Activos
+## Bugs resueltos ✅
 
-### [REPORTED] BUG-01: NotebookLM UI may change, breaking Playwright selectors
-- **Severity**: Medium
-- **Component**: notebooklm_client.py
-- **Description**: Google may update NotebookLM UI periodically. CSS/Tag selectors used by Playwright may break.
-- **Impact**: Browser automation fails — cannot add sources, extract analysis
-- **Fix approach**:
-  - Use robust selectors: aria-labels, role attributes, text content matching (less brittle than CSS class names)
-  - Add retry logic with alternative selectors
-  - Monitor Google release notes / send alerts on failure
-- **Status**: Open — will handle with adaptive selectors + retry
-
-### [REPORTED] BUG-02: ElevenLabs voice gender mismatch
-- **Severity**: Low
-- **Component**: content_generator.py
-- **Description**: ElevenLabs voice selection may not match requested gender if voice ID is not available in a specific accent
-- **Impact**: Audio may sound male even when female requested
-- **Fix approach**:
-  - Verify voice ID before TTS call: list voices, filter by gender + accent
-  - Fallback voice if preferred not available
-- **Status**: Open — will handle with voice verification step
-
-### [REPORTED] BUG-03: YouTube search may return irrelevant videos
-- **Severity**: Medium
-- **Component**: source_collector.py
-- **Description**: YouTube API relevance ranking may return off-topic results
-- **Impact**: NotebookLM analysis will have noisy source material
-- **Fix approach**:
-  - Add relevance filtering: keyword matching + channel verification (must be Dan Martell's channel or related authoritative channels)
-  - Manual curation step: owner reviews and approves sources before NotebookLM analysis
-- **Status**: Open — filtering TBD
-
-### [REPORTED] BUG-04: PDF generation may fail with long content
-- **Severity**: Medium
-- **Component**: pdf_designer.py
-- **Description**: LaTeX may fail to compile if content has special characters or is very long
-- **Impact**: PDF not generated
-- **Fix approach**:
-  - Sanitize content before LaTeX compilation (escape special chars)
-  - Split long content into multiple compilations
-  - Use robust LaTeX template with proper escaping
-- **Status**: Open — will test with long content
-
-### [REPORTED] BUG-05: Audio duration mismatch
-- **Severity**: Low
-- **Component**: content_generator.py
-- **Description**: ElevenLabs TTS duration may not match expected page count
-- **Impact**: Audio may be too short/long for the content
-- **Fix approach**:
-  - Estimate word count → expected duration (words/min for TTS)
-  - Adjust TTS speed if needed (ElevenLabs supports stability + similarity boost)
-- **Status**: Open — will handle with duration estimation
+| ID | Issue | Fix | Date |
+|----|-------|-----|------|
+| BUG-FIXED-1 | A2A file structure missing | 11 A2A files creados | 2026-08-21 |
+| BUG-FIXED-2 | factory.py sin código | factory.py creado con 6 fases A→B→Z | 2026-08-21 |
+| BUG-FIXED-3 | lib/ sin módulos | 5 módulos creados | 2026-08-21 |
+| BUG-FIXED-4 | Playwright no instalado | Playwright + Chromium instalados | 2026-08-21 |
+| BUG-FIXED-5 | Content Generator sin funciones | docs, slides, infographics, quiz creados y probados | 2026-08-21 |
+| BUG-FIXED-6 | PDF Designer sin funciones | reportlab funciona como PDF fallback | 2026-08-21 |
+| BUG-FIXED-7 | Quality Checker sin checks | 6 checks creados y probados | 2026-08-21 |
+| BUG-FIXED-8 | .env.example faltante | .env.example creado con todas las credenciales | 2026-08-21 |
+| BUG-FIXED-9 | .gitignore faltante | .gitignore creado (protege .env, output/, Python artifacts, LaTeX) | 2026-08-21 |
+| BUG-FIXED-10 | requirements.txt faltante | requirements.txt creado | 2026-08-21 |
+| BUG-FIXED-11 | config.product.json faltante | config.product.json creado con metadatos completos | 2026-08-21 |
+| BUG-FIXED-12 | Content Generator SVG NameError | generate_infographics() f-strings causando NameError (font/arrow/box no definidos) — reescrito con string concatenation | 2026-08-21 |
+| BUG-FIXED-13 | Quality Checker summary() TypeError | summary() usando zip(self.checks_ran, self.checks_passed) donde checks_passed es int no list — reescrito con self._last_results | 2026-08-21 |
 
 ---
 
-## Fixed Bugs (already resolved)
+## Bugs activos (con trabajo alrededor)
 
-| ID | Issue | Fix |
-|----|-------|-----|
-| BUG-FIXED-1 | A2A file structure missing | All A2A files created |
-| BUG-FIXED-2 | Factory structure missing | factory.py + config + lib/ structure in place |
-| BUG-FIXED-3 | No Google API identified | YouTube API key identified and ready to use |
+| ID | Issue | Severity | Workaround | Estado |
+|----|-------|----------|------------|--------|
+| BUG-01 | NotebookLM UI puede cambiar, rompiendo Playwright selectors | Medium | Usar selectores basados en texto + retry con alternativas | Open — manejado con selectores adaptativos + retry |
+| BUG-02 | ElevenLabs voice gender puede no coincidir con accent solicitado | Low | Verificar voice ID antes de TTS, fallback voice si no disponible | Open — manejado con verificacion de voz |
+| BUG-03 | YouTube search puede devolver videos irrelevantes | Medium | Filtro por keywords + channel verification + manual curation | Open — manejado con filtrado |
+| BUG-04 | LaTeX puede fallar con caracteres especiales o contenido muy largo | Medium | Sanitizar contenido antes de compilación, usar reportlab fallback | Open — manejado con sanitization + fallback |
+| BUG-05 | Audio duration puede no coincidir con expected page count | Low | Estimar word count → duración esperada, ajustar TTS speed | Open — manejado con estimación |
 
 ---
 
-## Bug Triage Status
+## Estado de bugs
 
 | Bug | Severity | Priority | Owner | Target Fix |
 |-----|----------|----------|-------|------------|
-| BUG-01 | Medium | High | AIIA | Before first NotebookLM use |
-| BUG-02 | Low | Medium | AIIA | Before first audio generation |
-| BUG-03 | Medium | High | AIIA | Before first NotebookLM source add |
-| BUG-04 | Medium | High | AIIA | Before first PDF generation |
-| BUG-05 | Low | Low | AIIA | Later phase |
+| BUG-01 | Medium | High | AIIA | Antes de primer uso de NotebookLM |
+| BUG-02 | Low | Medium | AIIA | Antes de primera generación de audio |
+| BUG-03 | Medium | High | AIIA | Antes de primer source collection |
+| BUG-04 | Medium | High | AIIA | Antes de primera generación de PDF |
+| BUG-05 | Low | Low | AIIA | Fase posterior |
+
+**Total bugs activos:** 5 (todos con workaround disponible)
+**Total bugs resueltos:** 13
 
 ---
 
-> Updated: 2026-08-21. Next review: after first end-to-end test.
+## Bug triage process
+
+Cada bug:
+1. Documentado aquí con ID, issue, severity, workaround, estado
+2. Si se resuelve: movido a "Bugs resueltos" con fix + date
+3. Si se descubre nuevo bug: agregado a "Bugs activos"
+
+---
+
+> Updated: 2026-08-21. Status: INFRAESTRUCTURA COMPLETA. Next review: after first production pipeline run.
