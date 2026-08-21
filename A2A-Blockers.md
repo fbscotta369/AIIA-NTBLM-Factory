@@ -7,52 +7,27 @@
 
 ## Blockers Activos
 
-### 🔴 BLO-01: Credenciales NotebookLM (login a notebooklm.google.com)
+### 🔴 BLO-01: NotebookLM login — Google bloquea navegador headless
 - **Severity:** Critical
 - **Swarm:** NotebookLM Client (Phase 2)
-- **Blocked by:** Google cuenta fbscotta@gmail.com requiere credenciales para login
-- **Impact:** No se puede ejecutar el pipeline completo — Phase 2 falla sin login
+- **Blocked by:** Google devuelve "Couldn't sign you in — This browser or app may not be secure" en cuentas f4kub4lt4 / B4lth4z4r.369 / baltazar.scotta.369. NO es un bug del código — Google rechaza el sign-in a nivel de servidor (anti-automation) antes de pedir password.
+- **Verificado en:** 2026-08-21 (3 cuentas probadas, todas bloqueadas idénticamente)
+- **Impact:** Phase 2 no puede ejecutarse automáticamente. El campo de email SÍ aparece, pero tras enviarlo Google niega el login.
 - **Trabajo alrededor disponible:**
-  - Opción A: app-password de Google (recomendado si 2FA activado)
-  - Opción B: cookies de sesión guardadas (~/.aiia-ntblm/notebooklm_cookies.json o GOOGLE_SESSION_COOKIE env var)
-  - Opción C: NOTEBOOKLM_PASSWORD (no recomendado si 2FA activado)
-- **Estado:** 🔴 Blocked — credenciales no configuradas
-- **Solución requerida:** FB configura NOTEBOOKLM_APP_PASSWORD o exporta cookies de sesión al .env
+  - **Opción A (recomendada):** exportar cookies de sesión desde un navegador REAL (Chrome en escritorio, logueado a Google) → pegar como `GOOGLE_SESSION_COOKIE` (base64 de storage_state JSON) en .env. Playwright reusa la sesión sin re-login.
+  - **Opción B:** usar un perfil de Chrome persistente (`user_data_dir`) ya logueado, en vez de login por password.
+  - **Opción C:** NotebookLM API (si la cuenta tiene acceso) en lugar de automatización web.
+- **Estado:** 🔴 Blocked — requiere acción manual de FB (exportar cookies de sesión de un navegador real)
+- **Solución requerida:** FB exporta cookies de sesión de Google logueada y las pasa vía `GOOGLE_SESSION_COOKIE`. El código ya soporta `load_cookies()` desde env/file.
 
-### 🔴 BLO-02: ElevenLabs API key (TTS)
-- **Severity:** High
-- **Swarm:** Content Generation (Phase 3 — audio)
-- **Blocked by:** ElevenLabs requiere plan de pago para uso comercial
-- **Impact:** No se puede generar audio de calidad comercial sin API key + plan paid
-- **Trabajo alrededor disponible:**
-  - Free tier disponible para pruebas (no comercial)
-  - Para uso comercial: necesitas ElevenLabs Starter ($5/mo) o Creator plan
-  - Alternativa TTS: Google Cloud TTS, Amazon Polly (pero ElevenLabs tiene mejor calidad + voces femeninas LatAm/British)
-- **Estado:** 🔴 Blocked — ELEVENLABS_API_KEY no configurada
-- **Solución requerida:** FB configura ELEVENLABS_API_KEY y plan de pago si se requiere comercial
+### ✅ BLO-02: ElevenLabs API key (TTS) — RESUELTO
+- **Estado:** ✅ RESUELTO — ELEVENLABS_API_KEY configurada y verificada en caliente (audio ES Laura + EN Alice generado OK)
 
-### 🔴 BLO-03: YouTube Data API key
-- **Severity:** High
-- **Swarm:** Source Collection (Phase 1)
-- **Blocked by:** YouTube Data API v3 requiere API key
-- **Impact:** No se puede buscar videos de YouTube automáticamente
-- **Trabajo alrededor disponible:**
-  - Free tier: 10,000 units/día — suficiente para búsquedas limitadas
-  - Alternativa: búsqueda manual + paste de URLs
-  - Caché de resultados en output/ para evitar búsquedas repetidas
-- **Estado:** 🔴 Blocked — YOUTUBE_API_KEY no configurada
-- **Solución requerida:** FB configura YOUTUBE_API_KEY en Google Cloud Console
+### ✅ BLO-03: YouTube Data API key — RESUELTO
+- **Estado:** ✅ RESUELTO — GOOGLE_API_KEY configurada; google-api-python-client pinneado a 1.12.3 + setuptools<69
 
-### 🔴 BLO-04: OpenRouter API key
-- **Severity:** Medium
-- **Swarm:** Content Generation (Phase 3 — docs, quiz)
-- **Blocked by:** LLM para generación de contenido requiere API key
-- **Impact:** Content generation puede usar datos mock/generics sin LLM
-- **Trabajo alrededor disponible:**
-  - Contenido puede generarse con datos mock para testing
-  - Para producción: necesitas OpenRouter API key
-- **Estado:** 🔴 Blocked — OPENROUTER_API_KEY no configurada
-- **Solución requerida:** FB configura OPENROUTER_API_KEY
+### ✅ BLO-04: OpenRouter API key — RESUELTO
+- **Estado:** ✅ RESUELTO — OPENROUTER_API_KEY configurada y verificada
 
 ---
 
