@@ -9,9 +9,13 @@ pydantic>=2.0.0
 # Browser Automation (for NotebookLM web interface)
 playwright>=1.40.0
 
-# YouTube Data API
-google-api-python-client>=2.100.0
+# PDF Generation — primary engine is reportlab (pure Python, no LaTeX needed)
+reportlab>=4.0.0
+
+# YouTube Data API — pin 1.12.3 (newer versions break with setuptools>=69 importlib_metadata)
+google-api-python-client==1.12.3
 google-auth>=2.23.0
+setuptools<69
 
 # AI / LLM
 openai>=1.6.0
@@ -20,7 +24,7 @@ anthropic>=0.30.0
 # Text-to-Speech
 elevenlabs>=1.14.0
 
-# PDF Generation (LaTeX-based via subprocess)
+# PDF Generation (LaTeX-based via subprocess — optional; reportlab is primary)
 # Requires system: texlive-latex-base texlive-fonts-recommended texlive-latex-extra
 
 # Image Generation
