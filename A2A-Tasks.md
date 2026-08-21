@@ -134,9 +134,11 @@
 ### Fase 1: Foundation ✅ COMPLETADA
 - T1-T8: Todo el código + A2A files creados y probados
 
-### Fase 2: Primer pipeline completo (PENDIENTE — requiere credenciales)
-- Ejecutar `factory.py --topic "Como auto educarse con IA. El método Dan Martell" --lang all --verify`
-- Verificar que las 4 credenciales faltantes están configuradas en .env
+### Fase 2: Primer pipeline completo (EN PROGRESO — credenciales configuradas, pipeline verificado parcialmente)
+- ✅ Credenciales configuradas en .env (ElevenLabs, OpenRouter, GOOGLE_API_KEY, Gladia, Deepgram, 3 cuentas Google)
+- ✅ Verificado en caliente: audio (ES Laura / EN Alice), PDF desktop+mobile (reportlab), ePub, docs/slides/infographics/quiz
+- 🟡 Pendiente: ejecución de NotebookLM en navegador con cookies de sesión (login + notebook + extract)
+- Comando: `python factory.py --topic "Como auto educarse con IA. El método Dan Martell" --lang all --verify`
 
 ### Fase 3: Producción
 - Optimizar prompts + templates
@@ -154,4 +156,4 @@
 
 ---
 
-> *Actualizado: 2026-08-21 — Estado: INFRAESTRUCTURA COMPLETA*
+> *Actualizado: 2026-08-21 — Estado: INFRAESTRUCTURA COMPLETA + pipeline verificado en caliente (audio/pdf/epub/docs OK; NotebookLM pendiente ejecución navegador)*

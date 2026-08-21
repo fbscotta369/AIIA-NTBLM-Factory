@@ -161,7 +161,77 @@ utilizando NotebookLM para el analisis profundo de las fuentes proporcionadas.
         except Exception as e:
             print(f"  Error compilando con {engine}: {e}")
 
-    print("  No se pudo generar PDF. Instala texlive-xetex o texlive-latex-base.")
+    # Fallback: pure-Python reportlab (no LaTeX needed)
+    try:
+        return _generate_pdf_reportlab(docs, lang, fmt, output_dir, slug)
+    except Exception as e:
+        print(f"  Error en fallback reportlab: {e}")
+
+    print("  No se pudo generar PDF. Instala texlive-xetex o reportlab.")
+    return ""
+
+
+def _generate_pdf_reportlab(docs: str, lang: str, fmt: str, output_dir: Path, slug: str) -> str:
+    """Pure-Python PDF fallback using reportlab (no LaTeX dependency)."""
+    from reportlab.lib.pagesizes import A4, A5
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import cm
+    from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer,
+                                    ListFlowable, ListItem, HRFlowable)
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER
+
+    page_size = A4 if fmt == "desktop" else A5
+    margin = 2 * cm if fmt == "desktop" else 1.5 * cm
+    output_path = output_dir / f"{slug}.pdf"
+
+    doc = SimpleDocTemplate(str(output_path), pagesize=page_size,
+                            leftMargin=margin, rightMargin=margin,
+                            topMargin=2 * cm, bottomMargin=2 * cm)
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle("CT", parent=styles["Title"], textColor=colors.HexColor("#1a1a2e"),
+                                 fontSize=24 if fmt == "desktop" else 18, alignment=TA_CENTER)
+    h2_style = ParagraphStyle("CH2", parent=styles["Heading2"], textColor=colors.HexColor("#1a1a2e"),
+                             fontSize=16 if fmt == "desktop" else 12)
+    h3_style = ParagraphStyle("CH3", parent=styles["Heading3"], textColor=colors.HexColor("#333333"),
+                             fontSize=13 if fmt == "desktop" else 10)
+    body_style = ParagraphStyle("CB", parent=styles["Normal"], fontSize=11 if fmt == "desktop" else 9,
+                               leading=16 if fmt == "desktop" else 13, spaceAfter=8)
+    bullet_style = ParagraphStyle("BU", parent=body_style, leftIndent=20, bulletIndent=10)
+
+    def esc_latex(t):
+        return (t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+
+    def inline_to_rl(t):
+        import re
+        t = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", t)
+        t = re.sub(r"\*(.+?)\*", r"<i>\1</i>", t)
+        return esc_latex(t)
+
+    story = []
+    for line in docs.split("\n"):
+        s = line.strip()
+        if not s:
+            continue
+        if s.startswith("# "):
+            story.append(Paragraph(esc_latex(s[2:]), title_style))
+            story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#4a90d9")))
+            story.append(Spacer(1, 12))
+        elif s.startswith("## "):
+            story.append(Paragraph(esc_latex(s[3:]), h2_style))
+            story.append(Spacer(1, 6))
+        elif s.startswith("### "):
+            story.append(Paragraph(esc_latex(s[4:]), h3_style))
+            story.append(Spacer(1, 4))
+        elif s.startswith("- ") or s.startswith("* "):
+            story.append(Paragraph(inline_to_rl(s[2:]), bullet_style, bulletText="\u2022"))
+        else:
+            story.append(Paragraph(inline_to_rl(s), body_style))
+
+    doc.build(story)
+    if output_path.exists() and output_path.stat().st_size > 1000:
+        print(f"  PDF generado (reportlab): {output_path} ({output_path.stat().st_size / 1024:.1f} KB)")
+        return str(output_path)
     return ""
 
 

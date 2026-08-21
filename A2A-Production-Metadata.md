@@ -198,16 +198,21 @@ Ejemplo: `output/como_auto_educarse_con_ia_el_metodo_dan_martell/`
 - ✅ config.py + config.product.json — configuración completa
 - ✅ lib/ — 5 módulos completos y probados
 - ✅ Playwright instalado + Chromium descargado
-- ✅ Content Generator: 4/5 funciones probadas OK
-- ✅ PDF Designer: reportlab funciona como fallback
+- ✅ Content Generator: docs/slides/infographics/quiz OK + **audio verificado con ElevenLabs real (Laura + Alice)**
+- ✅ PDF Designer: reportlab fallback VERIFICADO — produce PDF válido %PDF-1.4 (desktop + mobile) + ePub
 - ✅ Quality Checker: 6 checks probados
-- ✅ GitHub: 2 commits, 25 archivos, push completado
+- ✅ GitHub: 5 commits, todos los archivos en main, push completado
+- ✅ **Credenciales configuradas en .env** (ElevenLabs, OpenRouter, GOOGLE_API_KEY, Gladia, Deepgram, 3 cuentas Google NotebookLM)
 
-**PENDIENTE PARA EJECUCIÓN COMPLETA:**
-- 🔴 4 credenciales requeridas: YOUTUBE_API_KEY, ELEVENLABS_API_KEY, OPENROUTER_API_KEY, NOTEBOOKLM credenciales (app-password o cookies de sesión)
+**ESTADO DE PRODUCCIÓN:** 🟢 INFRAESTRUCTURA COMPLETA + PIPELINE VERIFICADO EN CALIENTE
+- Audio (ES/EN): verificado ✅
+- PDF desktop/mobile + ePub: verificado ✅
+- Docs/slides/infographics/quiz: verificado ✅
+- NotebookLM (login + notebook + extract): 🟡 código completo, pendiente ejecución navegador con credenciales Google
 
-**Próximo paso:** FB configura credenciales en .env, ejecuta `factory.py --topic "Como auto educarse con IA. El método Dan Martell" --lang all --verify`
+**Próximo paso:** Ejecutar NotebookLM en navegador con cookies de sesión → correr pipeline completo:
+`python factory.py --topic "Como auto educarse con IA. El método Dan Martell" --lang all --verify`
 
 ---
 
-> Updated: 2026-08-21. Status: INFRAESTRUCTURA COMPLETA. Next review: after first production pipeline run.
+> Updated: 2026-08-21. Status: INFRAESTRUCTURA COMPLETA + pipeline verificado. 5 commits en main, credenciales configuradas.
