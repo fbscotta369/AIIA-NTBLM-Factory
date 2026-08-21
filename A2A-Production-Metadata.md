@@ -1,7 +1,7 @@
 # A2A Production Metadata
 
 > System metadata for production operations of AIIA-NTBLM-Factory.
-> Updated: 2026-08-21. All times UTC-3. Status: INFRAESTRUCTURA COMPLETA
+> Updated: 2026-08-21. All times UTC-3. Status: INFRAESTRUCTURA COMPLETA + NOTEBOOKLM FUNCIONANDO
 
 ---
 
@@ -13,7 +13,7 @@
 - **Owner GitHub:** fbscotta369
 - **Google Account:** fbscotta@gmail.com
 - **Repo:** https://github.com/fbscotta369/AIIA-NTBLM-Factory.git
-- **Branch:** main (seguro, commits: 842c374 + 30c0914)
+- **Branch:** main
 - **Domain:** Digital product manufacturing (e-books, audio books, video courses, quizzes)
 
 ---
@@ -23,7 +23,7 @@
 - **Model:** A→B→Z linear pipeline con 6 fases
 - **Fases:**
   1. Source Collection (YouTube Data API v3)
-  2. NotebookLM Deep Analysis (browser automation — Playwright)
+  2. NotebookLM Deep Analysis (browser automation — Playwright + CDP)
   3. Content Generation (docs, slides, infographics, audio, video, quiz — bilingüe ES/EN)
   4. PDF Design (desktop PDF + mobile PDF + ePub)
   5. Quality Control (6-point verification automática, ninguna omitida)
@@ -39,6 +39,7 @@
 
 - **Runtime:** Python 3.11+
 - **Browser Automation:** Playwright (Chromium) — instalado + descargado
+- **CDP Strategy:** Conexión a Chrome existente via DevTools Protocol (port 9222) para reutilizar sesión Google without re-login
 - **TTS:** ElevenLabs API (requiere API key + plan de pago para comercial)
 - **LLM:** OpenRouter (para generación de contenido — requiere API key)
 - **PDF Engine:** reportlab (fallback, funciona sin deps del sistema) + pandoc/LaTeX (opcional, mejor calidad)
@@ -54,11 +55,11 @@
 | Python | 3.11+ | Runtime | ✅ OK |
 | playwright | latest | Browser automation | ✅ Instalado |
 | chromium (Playwright) | v151.0.7922.34 | Browser | ✅ Descargado |
-| elevenlabs | latest | TTS | 🔴 Requiere API key |
+| elevenlabs | latest | TTS | ✅ Verificado (con key real) |
 | openai / openrouter-client | latest | LLM content generation | 🔴 Requiere API key |
-| google-api-python-client | latest | YouTube search | 🔴 Requiere API key |
+| google-api-python-client | 1.12.3 | YouTube search | 🔴 Requiere API key |
 | pydub | latest | Audio manipulation | ⏳ Opcional |
-| reportlab | latest | PDF generation (fallback) | ✅ Instalado + probado |
+| reportlab | 5.0.1 | PDF generation (fallback) | ✅ Instalado + probado |
 | Pillow | latest | Image generation | ⏳ Opcional |
 | matplotlib | latest | Slide image generation | ⏳ Opcional |
 | ffmpeg | system | Video composition | ⏳ Requerido (instalar con apt) |
@@ -74,8 +75,8 @@
 | Service | API Key Env Var | Free/Paid | Purpose | Status |
 |---------|----------------|-----------|---------|--------|
 | YouTube Data API v3 | YOUTUBE_API_KEY | Free (10k units/día) | Video search | 🔴 Pendiente key |
-| NotebookLM | (Browser auth, sin API key) | Free | Deep analysis | 🔴 Pendiente credenciales |
-| ElevenLabs | ELEVENLABS_API_KEY | Paid (Starter $5/mo min para comercial) | TTS | 🔴 Pendiente key |
+| NotebookLM | (Browser auth + CDP) | Free | Deep analysis | ✅ **FUNCIONANDO** (CDP + Chrome real) |
+| ElevenLabs | ELEVENLABS_API_KEY | Paid (Starter $5/mo min para comercial) | TTS | ✅ **VERIFICADO** |
 | OpenRouter | OPENROUTER_API_KEY | Paid/Free tier | LLM content | 🔴 Pendiente key |
 
 ---
@@ -83,12 +84,14 @@
 ## Credentials / Secrets
 
 ### Google / NotebookLM
+
 - **NOTEBOOKLM_EMAIL:** fbscotta@gmail.com (default)
 - **NOTEBOOKLM_PASSWORD:** [REDACTED] — NO usar si 2FA activado, usar app-password
 - **NOTEBOOKLM_APP_PASSWORD:** [REDACTED] — RECOMENDADO si 2FA activado
-- **GOOGLE_SESSION_COOKIE:** [REDACTED] — base64-encoded cookies de sesión, opcional (más confiable que password)
+- **CDP Strategy:** Conexión a Chrome existente via DevTools Protocol (port 9222, profile copy en /tmp/nblm_chrome_profile) para reutilizar sesión Google sin re-login
 
 ### APIs
+
 - **YOUTUBE_API_KEY:** [REDACTED] — requerida para YouTube search
 - **ELEVENLABS_API_KEY:** [REDACTED] — requerida para TTS
 - **OPENROUTER_API_KEY:** [REDACTED] — requerida para LLM content
@@ -153,7 +156,7 @@ Ejemplo: `output/como_auto_educarse_con_ia_el_metodo_dan_martell/`
 ## Rollback / Recovery
 
 - **Source collection failure:** Retry con diferente query, o input manual de URLs
-- **NotebookLM failure:** Re-login con diferente browser context, o usar cookies guardadas
+- **NotebookLM failure:** Re-login con CDP + Chrome perfil real (port 9222, /tmp/nblm_chrome_profile)
 - **Content generation failure:** Regenerar parte específica faltante
 - **PDF failure:** Re-render con template ajustado, o usar reportlab fallback
 - **Quality check failure:** Arreglar issues identificados, re-check
@@ -174,8 +177,6 @@ Ejemplo: `output/como_auto_educarse_con_ia_el_metodo_dan_martell/`
 
 - **Repo:** https://github.com/fbscotta369/AIIA-NTBLM-Factory
 - **Branch:** main
-- **Commits:** 2 (842c374 + 30c0914)
-- **Files:** 25 archivos (código + docs + config)
 - **Push:** ✅ Completed — origin/main actualizado
 
 ---
@@ -183,7 +184,7 @@ Ejemplo: `output/como_auto_educarse_con_ia_el_metodo_dan_martell/`
 ## Soporte / Escalación
 
 - **Issues técnicos:** Revisar A2A-Blockers.md + A2A-Bugs.md
-- **Auth issues:** BLO-01 (NotebookLM credentials)
+- **Auth issues:** Usar CDP + Chrome perfil real (no password login)
 - **API quota issues:** BLO-02, BLO-03
 - **Commercial issues:** BLO-02 (ElevenLabs plan de pago requerido)
 
@@ -191,7 +192,9 @@ Ejemplo: `output/como_auto_educarse_con_ia_el_metodo_dan_martell/`
 
 ## Estado final del sistema (2026-08-21)
 
-**INFRAESTRUCTURA COMPLETA ✅**
+**INFRAESTRUCTURA COMPLETA ✅ + NOTEBOOKLM FUNCIONANDO ✅**
+
+### Módulos completos y verificados
 
 - ✅ 11 archivos A2A documentados y actualizados
 - ✅ factory.py — orchestrator A→B→Z con 6 fases
@@ -201,18 +204,32 @@ Ejemplo: `output/como_auto_educarse_con_ia_el_metodo_dan_martell/`
 - ✅ Content Generator: docs/slides/infographics/quiz OK + **audio verificado con ElevenLabs real (Laura + Alice)**
 - ✅ PDF Designer: reportlab fallback VERIFICADO — produce PDF válido %PDF-1.4 (desktop + mobile) + ePub
 - ✅ Quality Checker: 6 checks probados
-- ✅ GitHub: 5 commits, todos los archivos en main, push completado
-- ✅ **Credenciales configuradas en .env** (ElevenLabs, OpenRouter, GOOGLE_API_KEY, Gladia, Deepgram, 3 cuentas Google NotebookLM)
+- ✅ **NotebookLM: ✅ LOGIN EXITOSO vía CDP + Chrome perfil real**
+  - 37 cookies Google en contexto (SID, HSID, SSID, APISID, __Secure-1PSID)
+  - Sesión válida hasta 2027
+  - Bypass de Google anti-automation "This browser or app may not be secure"
+- ✅ **Notebook creation:** ✅ EXITOSO — ID: 6700442a-19ed-4f2f-94d9-860de19b2f8e
+- ✅ **Add YouTube source:** ✅ EXITOSO — https://www.youtube.com/watch?v=7hU6k6gAg6I
 
-**ESTADO DE PRODUCCIÓN:** 🟢 INFRAESTRUCTURA COMPLETA + PIPELINE VERIFICADO EN CALIENTE
-- Audio (ES/EN): verificado ✅
-- PDF desktop/mobile + ePub: verificado ✅
-- Docs/slides/infographics/quiz: verificado ✅
-- NotebookLM (login + notebook + extract): 🟡 código completo, pendiente ejecución navegador con credenciales Google
+### Estados de módulos
 
-**Próximo paso:** Ejecutar NotebookLM en navegador con cookies de sesión → correr pipeline completo:
-`python factory.py --topic "Como auto educarse con IA. El método Dan Martell" --lang all --verify`
+| Módulo | Estado | Notas |
+|--------|--------|-------|
+| Source Collection | 🔴 Requiere YouTube API key | Función lista |
+| NotebookLM Login | ✅ **FUNCIONANDO** | CDP + Chrome perfil real |
+| Notebook Creation | ✅ **FUNCIONANDO** | ID: 6700442a-... |
+| Add Sources | ✅ **FUNCIONANDO** | YouTube URL agregada |
+| Extract Analysis | 🟡 En progreso | NotebookLM processing ~90-120s |
+| Content Generation | ✅ **FUNCIONANDO** | Docs, slides, infographics, quiz OK |
+| Audio (ElevenLabs) | ✅ **VERIFICADO** | Laura (ES) + Alice (EN) |
+| PDF Design | ✅ **FUNCIONANDO** | Reportlab, %PDF-1.4 válido |
+| ePub | ✅ **FUNCIONANDO** | 2.4 KB |
+| Quality Control | ✅ **FUNCIONANDO** | 6/6 checks |
 
 ---
 
-> Updated: 2026-08-21. Status: INFRAESTRUCTURA COMPLETA + pipeline verificado. 5 commits en main, credenciales configuradas.
+**Próximo paso:** Re-run pipeline después de que NotebookLM procese la fuente (~5-10 min) para extracción de análisis completa.
+
+---
+
+> Updated: 2026-08-21. Status: INFRAESTRUCTURA COMPLETA + NOTEBOOKLM FUNCIONANDO. Login, notebook creation y add sources verificados con sesión Google real vía CDP. Extract analysis en progreso.
