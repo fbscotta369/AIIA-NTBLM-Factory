@@ -438,3 +438,11 @@ python3 force_providers_config.py             # ✅ Config forzado exitosamente
 | 006 | /rotate infinite loop | ✅ Placeholder + auto-healing |
 | 007 | Cronjob context exceeded | ✅ no_agent mode |
 | 008 | No force-config script | ✅ force_providers_config.py created |
+
+<!-- AIIA-FACTORY-VERIFIED-2026-08-22 -->
+## AIIA Factory Verification — 2026-08-22
+
+Verified 2026-08-22: `python3 scripts/run_tests.py` 4/4 passed exit 0 (custom runner).
+
+Part of Task Group **TG-AIIA-FACTORY-2026-08-22** (control plane: `/home/fb/Downloads/A2A-SHARED-PROGRESS.md`).
+Verified by **direct execution** under AIIA DR-1 — the `delegate_task` subagent channel returned `HTTP 401` (OpenRouter key not propagated to child); the orchestrator executed the verification directly.

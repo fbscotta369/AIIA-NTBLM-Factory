@@ -59,3 +59,11 @@ Fix: `cronjob update 83afe4a41c75 --no_agent true` → el script se ejecuta dire
 - **Remote:** https://github.com/fbscotta369/AIIA-NTBLM-Factory.git
 - **Device:** Hermes_AIIA_bot
 - **Status:** PRODUCTION READY ✅ / DEPLOYED ✅
+
+<!-- AIIA-FACTORY-VERIFIED-2026-08-22 -->
+## AIIA Factory Verification — 2026-08-22
+
+Verified 2026-08-22: `python3 scripts/run_tests.py` 4/4 passed exit 0 (custom runner).
+
+Part of Task Group **TG-AIIA-FACTORY-2026-08-22** (control plane: `/home/fb/Downloads/A2A-SHARED-PROGRESS.md`).
+Verified by **direct execution** under AIIA DR-1 — the `delegate_task` subagent channel returned `HTTP 401` (OpenRouter key not propagated to child); the orchestrator executed the verification directly.

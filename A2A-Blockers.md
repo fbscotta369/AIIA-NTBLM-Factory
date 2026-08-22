@@ -68,3 +68,11 @@ Orden de prioridad para desbloquear (por severidad):
 ---
 
 > Updated: 2026-08-21. Status: INFRAESTRUCTURA COMPLETA + NOTEBLOCKERS ACTIVOS except BLO-05 (procesamiento NotebookLM en progreso). BLO-01 resuelto vía CDP + Chrome perfil real.
+
+<!-- AIIA-FACTORY-VERIFIED-2026-08-22 -->
+## AIIA Factory Verification — 2026-08-22
+
+Verified 2026-08-22: `python3 scripts/run_tests.py` 4/4 passed exit 0 (custom runner).
+
+Part of Task Group **TG-AIIA-FACTORY-2026-08-22** (control plane: `/home/fb/Downloads/A2A-SHARED-PROGRESS.md`).
+Verified by **direct execution** under AIIA DR-1 — the `delegate_task` subagent channel returned `HTTP 401` (OpenRouter key not propagated to child); the orchestrator executed the verification directly.
