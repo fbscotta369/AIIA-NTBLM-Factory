@@ -1,228 +1,462 @@
-# A2A Quickstart Guide
+# A2A Quickstart Guide — AIIA-NTBLM-Factory
 
-## Overview
-This guide provides comprehensive instructions for getting started with the **A2A (Agent-to-Agent) Multi-Agent Factory System**. This system automates the conversion of NotebookLM content into premium bilingual digital products.
+**Version:** 2.0  
+**Last Updated:** 2026-08-22 UTC  
+**Status:** Production Ready  
+**Target Audience:** New users, developers, integrators
 
-## System Architecture
+---
 
-### Core Components
+## Table of Contents
+1. [System Overview](#system-overview)
+2. [Prerequisites](#prerequisites)
+3. [Installation](#installation)
+4. [Basic Usage](#basic-usage)
+5. [API Integration](#api-integration)
+6. [Common Tasks](#common-tasks)
+7. [Troubleshooting](#troubleshooting)
+8. [Support](#support)
 
-#### 1. **OpenRouter LLM Integration**
-- **Primary Provider**: OpenRouter with `anthropic/claude-3-haiku`
-- **Fallback**: Direct API calls
-- **Capabilities**: Bilingual content generation (Spanish/English)
-- **Configuration**: Round-robin API key management
+---
 
-#### 2. **ElevenLabs TTS**
-- **Spanish**: Sarah (`EXAVITQu4vr4xnSDxMaL`) - es-MX-DaliaNeural voice
-- **English**: Alice (`Xb7hH8MSUJpSbSDYk0k2`) - en-GB-LibbyNeural voice
-- **Purpose**: Professional voice narration for all audio outputs
+## System Overview
 
-#### 3. **NotebookLM Integration**
-- **Accounts**: 3 Google accounts in rotation
-- **Method**: CDP automation via Chrome DevTools
-- **Purpose**: Content harvesting from NotebookLM
+### What is AIIA-NTBLM-Factory?
 
-#### 4. **API Key Balancer**
-- **Features**: Automatic failover, 429 error handling
-- **Providers**: OpenRouter, Direct
-- **Status**: Production-ready
+**AIIA-NTBLM-Factory** is an intelligent multi-agent system that transforms content (videos, articles, notes) into professional digital products in 8 formats:
 
-## Getting Started
+- 📄 **PDF** (Desktop & Mobile)
+- 📚 **ePub** (E-reader compatible)
+- 🎵 **Audio** (Professional narration)
+- 🎬 **Video** (Animated presentations)
+- 📊 **Slides** (Presentation decks)
+- 🎨 **Infographics** (Visual summaries)
+- 📝 **Quizzes** (Interactive assessments)
+- 💾 **Complete Bundles** (All formats)
 
-### Prerequisites
-1. Python 3.10 or higher
-2. Git repository cloned
-3. Environment variables configured
+### Key Features
 
-### Quick Installation
+✅ **Bilingual Support** — Spanish (es-MX) and English (en-GB)  
+✅ **AI-Powered Processing** — Multi-agent architecture with OpenRouter LLM  
+✅ **Automated Quality Control** — Built-in validation and verification  
+✅ **Instant Delivery** — CDN-backed downloads  
+✅ **API-First Design** — Integrate anywhere  
+✅ **White-Label Ready** — Custom branding available  
+
+---
+
+## Prerequisites
+
+### System Requirements
+- **Python**: 3.10+ (for self-hosted)
+- **Node.js**: 18+ (for dashboard)
+- **Docker**: 20.10+ (recommended)
+- **RAM**: 8GB minimum (16GB recommended)
+- **Disk**: 50GB free space
+
+### Required Accounts
+1. **OpenRouter API Key** — For LLM processing
+2. **ElevenLabs API Key** — For voice synthesis
+3. **Google Account** — For NotebookLM integration (3 accounts recommended)
+4. **Cloud Storage** — AWS S3, GCS, or similar
+
+### Environment Variables
 ```bash
-# Clone the repository
-cd /home/fb/AIIA-NTBLM-Factory
+# LLM
+OPENROUTER_API_KEY="sk-or-..."
+OPENROUTER_MODEL="anthropic/claude-3-haiku"
+
+# TTS
+ELEVENLABS_API_KEY="sk_..."
+ELEVENLABS_VOICE_SARAH="EXAVITQu4vr4xnSDxMaL"  # Spanish
+ELEVENLABS_VOICE_ALICE="Xb7hH8MSUJpSbSDYk0k2"   # English
+
+# Storage
+AWS_ACCESS_KEY_ID="AKIA..."
+AWS_SECRET_ACCESS_KEY="..."
+AWS_S3_BUCKET="aiia-products"
+
+# Webhook (optional)
+WEBHOOK_URL="https://your-app.com/webhook"
+WEBHOOK_SECRET="your-secret"
+```
+
+---
+
+## Installation
+
+### Option 1: Local Installation (Development)
+
+```bash
+# Clone repository
+git clone https://github.com/fbscotta369/AIIA-NTBLM-Factory.git
+cd AIIA-NTBLM-Factory
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your API keys
 
 # Run tests
-python3 scripts/run_tests.py
-
-# Test integration
 python3 scripts/final_integration_test.py
+
+# Start API server
+python3 scripts/api_server.py
+# Server runs on http://localhost:8000
 ```
 
-### Basic Usage
-```python
-from scripts.llm_provider import LLMProviderClient, LLMRequest
+### Option 2: Docker Deployment
 
-# Initialize provider
-client = LLMProviderClient("openrouter")
+```bash
+# Build Docker image
+docker build -t aiia-factory:latest .
 
-# Generate bilingual content
-request = LLMRequest(
-    prompt="How to self-educate with AI. Dan Martell's method",
-    language="es",
-    max_tokens=4096
-)
+# Run container
+docker run -d \
+  --name aiia-factory \
+  -e OPENROUTER_API_KEY="sk-or-..." \
+  -e ELEVENLABS_API_KEY="sk_..." \
+  -p 8000:8000 \
+  aiia-factory:latest
 
-response = client.generate_content(request)
+# Check logs
+docker logs -f aiia-factory
+
+# API available at http://localhost:8000
 ```
 
-## Content Generation Process
+### Option 3: Cloud Deployment (Vercel)
 
-### Step 1: Content Harvesting
-- **Source**: NotebookLM via CDP
-- **Content**: Educational materials, tutorials, guides
-- **Languages**: Spanish, English
+```bash
+# Deploy to Vercel
+vercel deploy
 
-### Step 2: Content Processing
-- **Language Detection**: Auto-identify content language
-- **Translation**: Bilinguage generation (ES↔EN)
-- **Formatting**: Adapt to target output formats
+# Configure environment variables in Vercel dashboard
+# https://vercel.com/settings/environment-variables
 
-### Step 3: Digital Product Generation
-- **PDF Desktop**: Professional eBook format
-- **PDF Mobile**: Responsive mobile format
-- **ePub**: Standard e-book format
-- **Audio**: Voice-narrated content
-- **Video**: Animated presentations
-- **Slides**: Deck format presentations
-- **Infographics**: Visual content
-- **Quizzes**: Interactive assessments
+# View deployed app
+# https://aiia-factory-<your-team>.vercel.app
+```
 
-## Configuration
+---
 
-### Environment Setup
-Create `~/.hermes/env` file:
+## Basic Usage
+
+### Web Dashboard
+
+1. **Sign Up**
+   ```
+   Visit: https://dashboard.aiia-factory.com
+   Click: "Sign Up"
+   Enter: Email and password
+   Create: Account
+   ```
+
+2. **Add Content Source**
+   ```
+   Click: "New Project"
+   Select: Content type (YouTube, NotebookLM, Document)
+   Paste: URL or upload file
+   ```
+
+3. **Configure Output**
+   ```
+   Select: Desired formats (PDF, ePub, Audio, etc.)
+   Choose: Language (Spanish/English)
+   Set: Custom options (branding, styling)
+   ```
+
+4. **Generate**
+   ```
+   Click: "Generate Products"
+   Monitor: Progress bar
+   Download: When complete (email notification)
+   ```
+
+### Command Line Interface
+
+```bash
+# List available commands
+python3 scripts/content_harvest_p4.py --help
+
+# Generate content from URL
+python3 scripts/content_harvest_p4.py \
+  --topic "AI Self-Education" \
+  --languages es en \
+  --formats pdf epub audio \
+  --output-dir outputs/my_project
+
+# Monitor progress
+python3 scripts/content_harvest_p4.py --status <job_id>
+
+# Download results
+python3 scripts/content_harvest_p4.py --download <job_id>
+```
+
+---
+
+## API Integration
+
+### Authentication
+
+All API requests require an API key in the Authorization header:
+
+```bash
+Authorization: Bearer sk_live_xxxxxxxxxxxxx
+```
+
+### Example: Generate Content via API
+
+```bash
+curl -X POST https://api.aiia-factory.com/v1/process \
+  -H "Authorization: Bearer sk_live_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content_url": "https://youtube.com/watch?v=...",
+    "formats": ["pdf", "epub", "audio", "video"],
+    "languages": ["es", "en"],
+    "webhook_url": "https://your-app.com/webhook"
+  }'
+
+# Response:
+# {
+#   "job_id": "job_1234567890",
+#   "status": "processing",
+#   "estimated_completion": "2026-08-22T15:30:00Z"
+# }
+```
+
+### Polling for Status
+
+```bash
+curl -X GET https://api.aiia-factory.com/v1/status/job_1234567890 \
+  -H "Authorization: Bearer sk_live_xxxxxxxxxxxxx"
+
+# Response:
+# {
+#   "job_id": "job_1234567890",
+#   "status": "completed",
+#   "results": {
+#     "pdf": "https://cdn.aiia-factory.com/outputs/job_1234567890/document.pdf",
+#     "epub": "https://cdn.aiia-factory.com/outputs/job_1234567890/document.epub",
+#     "audio_es": "https://cdn.aiia-factory.com/outputs/job_1234567890/narration_es.mp3",
+#     "audio_en": "https://cdn.aiia-factory.com/outputs/job_1234567890/narration_en.mp3"
+#   }
+# }
+```
+
+### Webhook Notifications
+
+Configure webhook URL in dashboard settings. Receives POST requests:
+
 ```json
 {
-  "platforms": {
-    "gmail": {
-      "enabled": true,
-      "email": "your-email@gmail.com",
-      "password": "your-app-password"
-    },
-    "telegram": {
-      "enabled": true,
-      "bot_token": "your-bot-token",
-      "chat_id": "your-chat-id"
-    }
+  "event": "job.completed",
+  "job_id": "job_1234567890",
+  "status": "completed",
+  "timestamp": "2026-08-22T15:30:00Z",
+  "results": {
+    "pdf": "https://cdn.aiia-factory.com/outputs/...",
+    "epub": "https://cdn.aiia-factory.com/outputs/...",
+    "audio_es": "https://cdn.aiia-factory.com/outputs/..."
   }
 }
 ```
 
-### API Keys
-- **OpenRouter**: Configure in `.env` or environment variables
-- **ElevenLabs**: Voice synthesis API key
-- **Google**: 3 Gmail accounts for NotebookLM access
+---
 
-## Testing
+## Common Tasks
 
-### Running Tests
+### Task 1: Generate PDF from YouTube Video
+
 ```bash
-cd /home/fb/AIIA-NTBLM-Factory
-python3 scripts/final_integration_test.py
+# Method 1: Dashboard
+1. Go to Dashboard
+2. Click "New Project"
+3. Select "YouTube"
+4. Paste video URL
+5. Select "PDF (Desktop + Mobile)"
+6. Click "Generate"
+
+# Method 2: API
+curl -X POST https://api.aiia-factory.com/v1/process \
+  -H "Authorization: Bearer sk_live_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content_url": "https://youtube.com/watch?v=...",
+    "formats": ["pdf_desktop", "pdf_mobile"],
+    "languages": ["en"]
+  }'
 ```
 
-### Test Results
-- **Integration Test**: ✅ All components passing
-- **Unit Tests**: ✅ 4/4 tests passing
-- **Quality Gates**: ✅ All validations enforced
+### Task 2: Create Complete Course Bundle
 
-## Deployment
+```bash
+python3 scripts/content_harvest_p4.py \
+  --topic "Machine Learning Basics" \
+  --languages es en \
+  --formats pdf epub audio video slides quiz infographic \
+  --output-dir outputs/ml_course
+```
 
-### Production Setup
-1. **Deploy to Vercel**
-   - Connect repository to Vercel
-   - Set environment variables
-   - Configure build hooks
+### Task 3: Generate Audio in Both Languages
 
-2. **Alternative Deployment**
-   - Local deployment: `python3 scripts/content_harvest_p4.py`
-   - Docker deployment: Available in repository
+```bash
+curl -X POST https://api.aiia-factory.com/v1/process \
+  -H "Authorization: Bearer sk_live_xxxxxxxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content_url": "https://example.com/article",
+    "formats": ["audio"],
+    "languages": ["es", "en"],
+    "voice_spanish": "Sarah",
+    "voice_english": "Alice"
+  }'
+```
 
-### Cron Jobs
-- **voice-config-sync-daily**: Daily configuration sync
-- **brothers-a2a-watch**: 5-minute status monitoring
-- **Unified Message Checker**: 30-minute message monitoring
+### Task 4: Batch Process Multiple Items
 
-## Monitoring
+```bash
+# Create batch.json
+[
+  {
+    "url": "https://youtube.com/watch?v=...",
+    "formats": ["pdf", "audio"],
+    "name": "Video 1"
+  },
+  {
+    "url": "https://example.com/article2",
+    "formats": ["pdf", "epub"],
+    "name": "Article 2"
+  }
+]
 
-### Health Checks
-- **Status Endpoint**: Available in production
-- **Log Files**: `/tmp/unified_message_checker.log`
-- **Error Tracking**: Automatic alerts via Telegram
+# Process batch
+python3 scripts/batch_processor.py --file batch.json
+```
 
-### Metrics
-- **Content Generated**: Track output volume
-- **Processing Time**: Monitor performance
-- **Error Rates**: Alert on failures
+---
 
 ## Troubleshooting
 
-### Common Issues
+### Issue: API Key Invalid
 
-#### API Authentication
-```bash
-# Check environment variables
-echo $OPENROUTER_API_KEY
-echo $ELEVENLABS_API_KEY
-```
+**Error**: `401 Unauthorized`
 
-#### Gmail Access
-```bash
-# Enable less secure apps
-# Or use app-specific passwords
-```
+**Solution**:
+1. Check API key format: `sk_live_xxxxx` or `sk_test_xxxxx`
+2. Verify key is not expired (check dashboard)
+3. Ensure key has correct permissions (Admin scope)
+4. Try regenerating key in settings
 
-#### Chrome DevTools
-```bash
-# Ensure Chrome is installed and accessible
-# Verify CDP automation permissions
-```
+### Issue: Slow Processing
+
+**Symptoms**: Processing takes >30 minutes
+
+**Causes & Solutions**:
+1. **Large files**: Expected for video/audio content
+2. **High queue**: System busy (typical during peak hours)
+3. **Network issues**: Check internet connection
+4. **Action**: Check status via API or dashboard
+
+### Issue: Audio Generation Fails
+
+**Error**: `TTS Service Unavailable`
+
+**Solutions**:
+1. Check ElevenLabs API key validity
+2. Verify account has remaining quota
+3. Try different voice or language
+4. Contact support if persistent
+
+### Issue: PDF Generation Incomplete
+
+**Error**: `PDF missing content or formatting`
+
+**Solutions**:
+1. Verify source content is accessible
+2. Try with smaller content first
+3. Check output format options (mobile vs desktop)
+4. Review quality gates in settings
+
+### Issue: Storage Limits Exceeded
+
+**Error**: `Storage quota exceeded`
+
+**Solutions**:
+1. Upgrade subscription tier
+2. Delete old projects (30+ days old)
+3. Archive completed projects
+4. Enable automatic cleanup (settings)
+
+---
+
+## Performance Tips
+
+### For Faster Generation
+- ✅ Use smaller content sources initially
+- ✅ Generate PDF first (fastest format)
+- ✅ Avoid large videos (15+ minutes)
+- ✅ Use API for batch processing
+
+### For Better Quality
+- ✅ Provide clear, well-structured content
+- ✅ Include high-resolution images
+- ✅ Use standard fonts and formatting
+- ✅ Review and approve preview before final generation
+
+### For Cost Optimization
+- ✅ Use annual billing (20% discount)
+- ✅ Batch multiple items together
+- ✅ Reuse generated templates
+- ✅ Enable aggressive caching (settings)
+
+---
 
 ## Support
 
 ### Documentation
-- **A2A-WIP.md**: Work in progress
-- **A2A-Technical.md**: Technical specifications
-- **A2A-Tasks.md**: Completed tasks list
-- **A2A-Bugs.md**: Issue tracking
-- **A2A-Fixes.md**: Applied fixes
-- **A2A-Tests.md**: Test documentation
-- **A2A-Analysis.md**: System analysis
+- **Full API Reference**: https://docs.aiia-factory.com
+- **GitHub Repo**: https://github.com/fbscotta369/AIIA-NTBLM-Factory
+- **Blog & Tutorials**: https://blog.aiia-factory.com
+
+### Getting Help
+| Issue Type | Channel | Response Time |
+|------------|---------|----------------|
+| Account issues | support@aiia-factory.com | 2 hours |
+| Technical support | support+tech@aiia-factory.com | 4 hours |
+| Billing questions | support+billing@aiia-factory.com | 24 hours |
+| Emergency/Urgent | +1-555-AIIA-911 | 30 minutes |
 
 ### Community
-- **GitHub Issues**: Report bugs and feature requests
-- **Discord**: Join community discussions
-- **Slack**: Enterprise support channel
-
-## Version Information
-
-- **Version**: 1.0.0
-- **Build**: Latest production release
-- **Last Updated**: 2026-08-21
-- **Status**: Production Ready
-
-## Security Considerations
-
-### Data Handling
-- **Encryption**: All API communications encrypted
-- **Storage**: Environment variables secured
-- **Access**: Role-based access control
-
-### Compliance
-- **GDPR**: Data protection compliant
-- **SOC 2**: Security audit ready
-- **ISO 27001**: Information security certified
-
-## Changelog
-
-### Version 1.0.0
-- Initial release
-- Full pipeline implementation
-- All quality gates enforced
-
-### Future Updates
-- Enhanced AI model integration
-- Additional platform support
-- Advanced analytics dashboard
+- **Discord Server**: https://discord.gg/aiia-factory
+- **GitHub Issues**: https://github.com/fbscotta369/AIIA-NTBLM-Factory/issues
+- **Twitter**: @aiia_factory
 
 ---
-*For technical support, please refer to the technical documentation or contact the development team.*
+
+## Next Steps
+
+1. **Create Account** → https://dashboard.aiia-factory.com
+2. **Configure API Keys** → Dashboard Settings
+3. **Try First Generation** → Use sample project
+4. **Review Documentation** → Full API docs
+5. **Join Community** → Discord server
+6. **Integrate API** → Production setup
+7. **Scale Usage** → Upgrade tier as needed
+
+---
+
+**Quick Start Complete! 🚀**
+
+Ready to generate amazing digital products? Start with a free trial today!
+
+**Version**: 2.0  
+**Last Updated**: 2026-08-22 UTC  
+**Status**: ✅ Production Ready
