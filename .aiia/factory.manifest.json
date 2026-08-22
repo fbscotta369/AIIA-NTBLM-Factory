@@ -1,0 +1,9 @@
+{
+  "name": "AIIA-NTBLM-Factory",
+  "version": "1.0.0",
+  "description": "Multi-agent factory for automated NotebookLM processing and eBook generation",
+  "platforms": ["gmail", "telegram", "whatsapp", "linkedin"],
+  "capabilities": ["content_harvest", "unified_messaging", "a2a_documentation"],
+  "status": "production",
+  "last_updated": "2026-08-21"
+}

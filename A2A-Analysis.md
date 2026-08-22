@@ -1,259 +1,460 @@
-# A2A Analysis — A→B→Z Final System Analysis
+# A2A-Analysis.md — Akasha (Hermes Agent BackUp) Deep Analysis
 
-> Analysis of AIIA-NTBLM-Factory v1.0 from source collection to production-ready product export.
-> Updated: 2026-08-21. All times UTC-3. Status: INFRAESTRUCTURA COMPLETA
-
----
-
-## A→B→Z Lifecycle Overview
-
-### What We're Solving
-Given a topic (e.g. "Como auto educarse con IA. El método Dan Martell"), produce a sellable digital product in two languages (ES LatAm/female + EN British/female) from NotebookLM deep analysis.
-
-### Why This Matters
-NotebookLM provides structured analysis of YouTube sources (summaries, slides, FAQ, timeline). We use it as the engine, then package the output as professional digital products: PDF (desktop + mobile), ePub, audio (MP3 via ElevenLabs), video (MP4 via FFmpeg), and quiz.
-
-### What We've Done So Far (2026-08-21)
-- ✅ **Infraestructura completa:** 11 archivos A2A + factory.py + config.py + config.product.json + 5 módulos lib/ + .env.example + .gitignore + requirements.txt + setup.py
-- ✅ **Playwright instalado + Chromium descargado:** Browser automation ready
-- ✅ **Content Generator probado:** docs (941 chars), slides (5), infographics (2 SVG), quiz (2 preguntas) — todos OK
-- ✅ **PDF Designer probado:** reportlab funciona como PDF fallback (sin LaTeX)
-- ✅ **Quality Checker probado:** 6 checks ejecutados correctamente
-- ✅ **GitHub push completado:** 2 commits (842c374 + 30c0914), 25 archivos en main branch
-- 🔴 **Pendiente ejecución completa:** 4 credenciales requeridas (YOUTUBE_API_KEY, ELEVENLABS_API_KEY, OPENROUTER_API_KEY, NOTEBOOKLM credenciales)
+**Generated:** 2026-08-17 23:35 UTC
+**Device:** T35L4X-40RU5 (Hermes Agent)
+**Repo:** https://github.com/fbscotta369/hermes-agent-backup
+**Local:** /home/fb/hermes-agent-backup
+**Total Commits:** 93
+**Repo Size:** 21 MB (excl. .git)
 
 ---
 
-## B Analysis — ¿Cómo se compone el sistema y qué agencia usa para qué?
-
-### B1: Source Collection (Phase 1 — YouTube Data API)
-Uses `lib/source_collector.py`. YouTube Data API v3 search + filtering.
-
-**Input:** Tema (ej: "Dan Martell auto education IA")
-
-**Process:**
-1. `search_videos(query, max_results=10)` — YouTube API search
-2. Filter by: views > 1000, duration 5-30 min, relevance keywords present
-3. Extract: title, url, channel, description, view_count, duration_seconds, duration_text, published, thumbnail
-
-**Output:** Lista de video dicts [{title, url, channel, view_count, duration_seconds, ...}]
-
-**Status:** ✅ Code completo + probado
-
----
-
-### B2: NotebookLM Client (Phase 2 — Browser Automation)
-Uses `lib/notebooklm_client.py`. Playwright Chromium para controlar Google NotebookLM.
-
-**Input:** Lista de YouTube URLs + credenciales (app-password o cookies)
-
-**Process:**
-1. `login()` — Login a Google via app-password o cookies de sesión
-2. `create_notebook(title)` — Crear notebook nuevo
-3. `add_sources(notebook, urls)` — Agregar YouTube URLs como fuentes
-4. Esperar 30s para NotebookLM procesar
-5. `extract_analysis(notebook)` — Extraer summary, slides, faq, timeline, insights
-
-**Session persistence:** Cookies guardadas en `~/.aiia-ntblm/notebooklm_cookies.json` o `GOOGLE_SESSION_COOKIE` env var.
-
-**Critical:** NotebookLM no tiene public API. Todo via browser UI automation.
-
-**Status:** ✅ Code completo. Login falla sin credenciales (esperado).
-
----
-
-### B3: Content Generation (Phase 3 — Multi-Format)
-Uses `lib/content_generator.py`. Genera contenido en 2 idiomas (ES LatAm + EN British).
-
-**Input:** NotebookLM analysis JSON + credenciales ElevenLabs (para audio)
-
-**Process por idioma:**
-1. `generate_docs(analysis, lang)` → Markdown con estructura completa: title, introduction, summary, content (insights + slides), FAQ, timeline, conclusion, appendix
-2. `generate_slides(analysis, lang)` → Slide data [{title, content, visual}]
-3. `generate_infographics(analysis, lang)` → SVG timeline + concept map
-4. `generate_audio(text, lang, voice)` → ElevenLabs TTS → MP3 (María para ES, Alice para EN)
-5. `generate_video(slides, audio, lang)` → FFmpeg slides + audio → MP4
-6. `generate_quiz(analysis, lang)` → Quiz questions [{type, question, options, answer, explanation}]
-
-**Voice config:**
-- ES: ElevenLabs FGY2WhTYpPnrIDTdsKH5 (Laura, LatAm, female)
-- EN: ElevenLabs Xb7hH8MSUJpSbSDYk0k2 (Alice, British, female)
-- Model: eleven_multilingual_v2
-
-**Status:** ✅ 4/5 funciones probadas OK (audio requiere API key)
-
----
-
-### B4: PDF Designer (Phase 4 — PDF + ePub)
-Uses `lib/pdf_designer.py`. Genera PDF (desktop + mobile) y ePub.
-
-**Input:** Markdown docs + infographics SVG + idioma
-
-**Process:**
-1. `generate_pdf(docs, infographics, lang, fmt)` → 
-   - fmt="desktop": A4, professional layout
-   - fmt="mobile": A5, phone-readable
-   - Methods: pandoc+wkhtmltopdf → pandoc+pdflatex → pandoc+weasyprint → HTML+weasyprint → reportlab fallback
-2. `generate_epub(docs, lang)` → pandoc markdown→epub
-
-**Status:** ✅ Code completo + probado (reportlab funciona)
-
----
-
-### B5: Quality Checker (Phase 5 — 6-Point Verification)
-Uses `lib/quality_checker.py`. 6 verificaciones automáticas, **NINGUNA omitida**.
-
-**Input:** output/<topic>/ directory con productos generados
-
-**Checks:**
-1. `check_completeness()` (CRITICAL): PDF existe, size > 50KB, tiene intro + content + conclusion sections
-2. `check_coherence()` (HIGH): Secciones en orden lógico (intro antes de conclusion), contenido > 200 chars
-3. `check_visual_quality()` (HIGH): Infografías SVG válidas, PDF con contenido visual (size > 50KB)
-4. `check_audio_quality()` (MEDIUM): Audio MP3 existe, duration > 30s, size > 5KB
-5. `check_mobile_responsiveness()` (MEDIUM): Mobile PDF existe, size > 50KB, size < desktop
-6. `check_branding_consistency()` (LOW): Marca AIIA en docs, color #1a1a2e en SVGs
-
-**Output:** Dict {check_name: {passed, message, severity}} + all_passed
-
-**Status:** ✅ Code completo + probado
-
----
-
-### B6: Orchestrator (factory.py — A→B→Z)
-Orquesta las 6 fases en secuencia.
-
-**Input:** --topic (required), --lang (default: all), --verify (opcional), --debug (opcional)
-
-**Process:**
-1. check_env() — verificar credenciales
-2. phase1_source_collection(topic, lang) → sources
-3. phase2_notebooklm_analysis(topic, sources, lang) → analysis
-4. phase3_content_generation(topic, analysis, langs) → content_results
-5. phase4_pdf_design(topic, content_results, langs) → pdf_results
-6. phase5_quality_control(topic, pdf_results, content_results, langs) → qc_results
-7. phase6_export(topic, all_results, langs) → output_path
-
-**Timeouts por fase:** 300s (source) + 600s (notebooklm) + 900s (content) + 300s (pdf) + 120s (quality) + 60s (export) = ~34 minutos máximo
-
-**Status:** ✅ Code completo + documentado
-
----
-
-## C Analysis — Infrastructure & Dependencies
-
-### Required APIs / Services
-| Service | Purpose | Env Var | Cost | Status |
-|---------|---------|---------|------|--------|
-| Google API (YouTube Data API v3) | Video search | YOUTUBE_API_KEY | Free tier (10k units/día) | 🔴 Key requerida |
-| NotebookLM | Deep analysis | Browser auth (no API key) | Free | 🔴 Credenciales requeridas |
-| ElevenLabs | TTS (female voices) | ELEVENLABS_API_KEY | Paid (Starter $5/mo min para comercial) | 🔴 Key + plan requeridos |
-| OpenRouter | LLM content | OPENROUTER_API_KEY | Paid/Free tier | 🔴 Key requerida |
-
-### Local Dependencies
-- Python 3.11+ ✅
-- pip packages: playwright ✅, elevenlabs, openai, google-api-python-client, reportlab ✅, Pillow, matplotlib
-- System: texlive-latex-base (opcional), ffmpeg (requerido para video), pandoc (opcional)
-
-### Directory Structure
+## 1. Repository Structure Overview
 
 ```
-AIIA-NTBLM-Factory/
-├── A2A-*.md                  # 11 archivos A2A (actualizados 2026-08-21)
-├── factory.py                # Orchestrator A→B→Z (6 fases)
-├── config.py                 # Configuración centralizada
-├── config.product.json       # Metadatos del producto (idiomas, voices, checks)
-├── .env.example              # Template de credenciales
-├── .gitignore                # Protege .env, output/, Python artifacts, LaTeX
-├── requirements.txt          # Python dependencies
-├── setup.py                  # Install script
-├── lib/                      # 5 módulos:
-│   ├── source_collector.py   # YouTube Data API
-│   ├── notebooklm_client.py  # Playwright browser automation
-│   ├── content_generator.py  # Docs, slides, infographics, audio, video, quiz
-│   ├── pdf_designer.py       # Desktop PDF + mobile PDF + ePub
-│   └── quality_checker.py    # 6-point verification
-├── output/                   # Generated products (gitignored)
-│   └── .gitkeep
-└── tests/                    # (futuro)
+hermes-agent-backup/
+├── A2A-WIP.md              # Short-term project memory
+├── A2A-BUGS.md             # Known bugs registry
+├── A2A-Fixes.md            # Applied fixes log
+├── A2A-PTI.md.bak          # Product Technical Inventory (backup)
+├── AGENTS.md               # Permanent operating rules
+├── BOOTSTRAP.md            # Bootstrap documentation
+├── SCHEMA.md               # Data schema reference
+├── config.yaml             # Main config (providers, models, fallback)
+├── config/                 # Config directory
+│   ├── config.SHARED_TEMPLATE.yaml
+│   ├── config.yaml
+│   ├── free_model_registry.json
+│   └── memory-export.json
+├── scripts/                # 12+ automation scripts
+├── Self-Improvement/       # v1.0 engines (27 sub-engines)
+├── registry/               # Device fleet registry
+├── skills/                 # 104 SKILL.md files
+├── sessions/               # Conversation history exports
+├── detections/             # Detection rules
+├── projects/               # Project documentation
+├── entities/               # Entity definitions
+├── memories/               # Persistent memory files
+├── CV/                     # Professional profile
+├── dame-mi-loto/           # Lottery app project
+├── Hermes Agent BackUp GitHub Repo/  # Meta-docs
+└── .git/                   # Version control
 ```
 
 ---
 
-## Security Notes
+## 2. Core Components
 
-- **DO NOT** store Google password in plain text. Use `NOTEBOOKLM_APP_PASSWORD` (app-password) or `GOOGLE_SESSION_COOKIE` (session cookies).
-- **YouTube API key:** rate-limited (10k units/día para free tier). Buscar una vez por tema.
-- **ElevenLabs:** uso comercial requiere Starter plan ($5/mo) o superior. Free tier es para non-commercial solo.
-- **OpenRouter:** requiere API key para LLM content generation.
-- **Copyright:** Todos los outputs se generan de YouTube sources — copyright debe ser cleared para venta comercial.
-- `.env` está en `.gitignore` — nunca commit real credentials.
-- A2A files usan `[REDACTED]` para todos los valores de credenciales.
+### 2.1 Akasha Sync (`akasha_sync.py`)
+**Path:** `/home/fb/hermes-agent-backup/akasha_sync.py` (424 lines)
+**Purpose:** Collective Brain Synchronization — syncs everything from backup repo to local Hermes
+
+**7 Sync Items:**
+1. **Skills** — copies any skill dir with SKILL.md missing locally
+2. **Config** — syncs config.yaml (providers, models, fallback chains)
+3. **API Keys** — additive sync of .env (never overwrites per-device values)
+4. **Key Pool** — syncs api_key_pool.json (rotating key pools)
+5. **Scripts** — copies new .py / .sh scripts from backup repo
+6. **Memories** — syncs memory files
+7. **Manifest** — generates/updates SKILL_MANIFEST.json
+
+**Modes:**
+- `python3 akasha_sync.py` → full sync
+- `--skills` → skills only
+- `--config` → config + API keys only
+- `--check` → dry-run
+- `--generate-manifest` → manifest only
+
+### 2.2 369x Master Orchestration (`run_369x.py`)
+**Path:** `/home/fb/.hermes/scripts/Run-369x/run_369x.py` (1146 lines)
+**Purpose:** Single command that does EVERYTHING — 22 phases
+
+**Phase Breakdown:**
+| Phase | Name | Description |
+|-------|------|-------------|
+| 0 | Random API Key Selection | Picks from key pool |
+| 1 | Gateway Ensure Running | Starts gateway if down |
+| 2 | Git Pull | `--rebase --autostash origin main` |
+| 3 | Git Submodule Sync | `--init --recursive` |
+| 3b | Fleet Skill Sync Pull | Every device gets latest skills |
+| 4 | Bootstrap | Runs bootstrap.sh |
+| 5 | Providers & Models | Configures model providers |
+| 6 | Free Model Round Robin | Discovers free models |
+| 7 | Device Registration | Registers in fleet registry |
+| 8 | Health Dashboard + Verification | STATUS.md + verify suite |
+| 9 | Self-Healing — Email Alert | 369e email alerts |
+| 10 | Email Responder | DISABLED (approval spam) |
+| 11 | Self-Healing — TTS | Text-to-Speech check/install |
+| 12 | Self-Healing — STT | Speech-to-Text check/install |
+| 13 | Free Models Catalog Refresh | Updates free model list |
+| 13b | Fleet Skill Sync Push | New skills broadcast to fleet |
+| 14 | Git Commit + Push | Retry with rebase (3 attempts) |
+
+**Key Features:**
+- Auto-detects real ~/.hermes path (sandbox-aware)
+- Self-healing for TTS (gTTS + espeak-ng + ffmpeg) and STT (openai-whisper)
+- Free model discovery from OpenRouter, OpenCode Zen, Groq, Z.AI, Nous Research
+- Fleet skill sync (pull + push)
+
+### 2.3 Sync Backup Script (`sync_backup.sh`)
+**Path:** `/home/fb/hermes-agent-backup/scripts/sync_backup.sh` (161 lines)
+**Purpose:** Full Hermes Agent → GitHub Backup Sync
+
+**What it syncs:**
+- ✅ Skills (categorized + top-level)
+- ✅ Scripts (.py, .sh)
+- ✅ Config (config.yaml only — NOT .env or auth.json)
+- ✅ Plugins
+- ✅ Cron jobs
+- ✅ Memory (exported as JSON via Python)
+- ✅ Device ID & round robin state
+
+**Modes:**
+- `sync_backup.sh` — copy files + commit + push (cron mode)
+- `sync_backup.sh --sync-only` — copy files ONLY (369x mode)
 
 ---
 
-## Rollback Notes
+## 3. Self-Improvement v1.0 Framework
 
-If any phase fails:
-- **Source collection:** Retry con diferente query, o manual URL input
-- **NotebookLM:** Re-login con diferente browser context, o usar cookies guardadas
-- **Content generation:** Regenerar parte específica faltante (docs, slides, audio, etc.)
-- **PDF:** Re-render con template ajustado, o usar reportlab fallback
-- **Quality check:** Arreglar issues identificados, re-check
-- **Export:** Ya escrito — safe para re-ejecutar
+**Path:** `/home/fb/hermes-agent-backup/Self-Improvement/`
+**Version:** 1.0 (2026-08-15)
+**Engines:** 27 sub-engines (14 implemented, 13 placeholder)
+
+### 3.1 Active Engines
+
+| Engine | Path | Status | Description |
+|--------|------|--------|-------------|
+| 369x-bootstrap-pipeline | `v1.0/369x-bootstrap-pipeline/` | ✅ | Full bootstrap execution & troubleshooting |
+| 369x-Fleet-Coordinator | `v1.0/369x-Fleet-Coordinator/` | ✅ | Fleet coordination dashboard |
+| Free-Model-Round-Robin | `v1.0/Free-Model-Round-Robin/` | ✅ | Free model discovery & sync |
+| discover_models.py | `v1.0/discover_models.py` | ✅ | Model discovery service |
+| dispatch_369x.py | `v1.0/dispatch_369x.py` | ✅ | 369x dispatch |
+| intelligence_amplifier.py | `scripts/intelligence_amplifier.py` | ✅ | Intelligence optimization |
+| improvement_engine.py | `scripts/improvement_engine.py` | ✅ | Auto-install improvements |
+| sync_backup.sh | `scripts/sync_backup.sh` | ✅ | Full backup sync |
+| akasha_device_registry.py | `scripts/akasha_device_registry.py` | ✅ | Fleet device registry |
+| register_this_device.py | `scripts/register_this_device.py` | ✅ | Device self-registration |
+| doctor.sh | `scripts/doctor.sh` | ✅ | System health check |
+| fix_venv_path.sh | `scripts/fix_venv_path.sh` | ✅ | PYTHONPATH fixer |
+| purge_reminder.sh | `scripts/purge_reminder.sh` | ✅ | Purge reminder |
+| recover_after_purge.sh | `scripts/recover_after_purge.sh` | ✅ | Post-purge recovery |
+
+### 3.2 Placeholder Engines (Not Implemented)
+
+| Engine | Path |
+|--------|------|
+| 369x-Auto-Improvement-Engine | `v1.0/369x-Auto-Improvement-Engine/placeholder.py` |
+| Agent-Performance-Telemetry | `v1.0/Agent-Performance-Telemetry/placeholder.py` |
+| API-Key-Balancer | `v1.0/API-Key-Balancer/placeholder.py` |
+| Auto-Healing-Engine | `v1.0/Auto-Healing-Engine/placeholder.py` |
+| Battery-Telegram-Alert | `v1.0/Battery-Telegram-Alert/placeholder.py` |
+| Bidirectional-Sync-Engine | `v1.0/Bidirectional-Sync-Engine/placeholder.py` |
+| Cross-Session-Insight-Distiller | `v1.0/Cross-Session-Insight-Distiller/placeholder.py` |
+| Gateway-Online-Notifier | `v1.0/Gateway-Online-Notifier/placeholder.py` |
+| Gateway-Self-Healing | `v1.0/Gateway-Self-Healing/placeholder.py` |
+| Intelligence-Amplifier-Engine | `v1.0/Intelligence-Amplifier-Engine/placeholder.py` |
+| MCP-Auto-Discovery | `v1.0/MCP-Auto-Discovery/placeholder.py` |
+| Model-Explorer | `v1.0/Model-Explorer/placeholder.py` |
+| Rate-Limit-Free-Failover | `v1.0/Rate-Limit-Free-Failover/placeholder.py` |
+| Top-Skills-Collection | `v1.0/Top-Skills-Collection/placeholder.py` |
 
 ---
 
-## Testing Results (2026-08-21)
+## 4. Auto-Sync Mechanism (Akasha ↔ Hermes)
 
-### Content Generator ✅
-```bash
-python -c "from lib.content_generator import *; test={'topic':'T','summary':['s'],'insights':['i'],'slides':['sl'],'faq':['q'],'timeline':['e']}; print('docs:', len(generate_docs(test)), 'chars'); print('slides:', len(generate_slides(test)), 'slides'); print('infographics:', len(generate_infographics(test)), 'svg'); print('quiz:', len(generate_quiz(test)['questions']), 'questions')"
+### 4.1 How It Works
+
+The auto-sync is a **bidirectional** system:
+
+**Direction 1: Backup → Local (Pull)**
+- `akasha_sync.py` pulls from GitHub repo to local ~/.hermes/
+- Runs as part of 369x Phase 4 (Bootstrap)
+- Syncs: skills, config, API keys, scripts, memories, manifest
+
+**Direction 2: Local → Backup (Push)**
+- `sync_backup.sh` pushes from local ~/.hermes/ to GitHub repo
+- Runs as part of 369x Phase 14 (Git Commit + Push)
+- Syncs: skills, scripts, config, plugins, cron jobs, memory, device info
+
+### 4.2 Trigger Points
+
+| Trigger | Action | Script |
+|---------|--------|--------|
+| 369x execution | Full sync (pull + push) | `run_369x.py` |
+| Cronjob `voice-config-sync-daily` | Voice config validation | `voice_config_sync.py` |
+| Manual sync | On-demand | `akasha_sync.py` or `sync_backup.sh` |
+| Git hook (post-commit) | Auto-push | `push_to_github.sh` |
+
+### 4.3 What Gets Auto-Synced
+
+| Component | Pull from Backup | Push to Backup |
+|-----------|------------------|----------------|
+| Skills (SKILL.md) | ✅ | ✅ |
+| Scripts (.py, .sh) | ✅ | ✅ |
+| config.yaml | ✅ | ✅ |
+| API Keys (.env) | ✅ (additive) | ❌ (excluded) |
+| Plugins | ✅ | ✅ |
+| Cron jobs | ✅ | ✅ |
+| Memory files | ✅ | ✅ (JSON export) |
+| Device registry | ❌ | ✅ |
+| Free model registry | ✅ | ✅ |
+
+---
+
+## 5. Fleet Coordination
+
+### 5.1 Device Registry
+**Path:** `/home/fb/hermes-agent-backup/registry/device-registry.json`
+
+**Current Fleet (18 devices):**
+
+| Device | Bot Name | Token Prefix |
+|--------|----------|--------------|
+| T35L4X-40RU5 | Hermes_AIIA_bot | 8639608331:*** |
+| mjolnir | Mjolnir_AIIA_bot | 8862030020:*** |
+| z0r | z0r_AIIA_bot | 8645464653:*** |
+| agentzero | AgentZero_AIIA_bot | 8773502892:*** |
+| spaceagent | SpaceAgent_AIIA_bot | 8721895505:*** |
+| odysseus | Odysseus_AIIA_bot | 8747149494:*** |
+| b4lt4 | B4LT4_bot | 8497952605:*** |
+| jarvis | Jarvis_OpenClaw_AIAgent_bot | 8685052609:*** |
+| j4rv15 | J4RV15_AIA_bot | 8630826084:*** |
+| vision | Vision_OpenClaw_AIAgent_bot | 8586406849:*** |
+| ultron | Ultron_OpenClaw_AIAgent_bot | 8791624345:*** |
+| shazam | SHAZAM_AIA_bot | 8220965008:*** |
+| alpha | Alpha_AIIA_bot | 8685572159:*** |
+| zeroclaw | ZeroClaw_AIA_bot | 8240117117:*** |
+| ironclaw | IronClaw_AIA_bot | 8301543976:*** |
+| openclaw | OpenClaw_AIA_bot | 8435155854:*** |
+
+### 5.2 Fleet Skill Sync
+- **Pull (Phase 3b):** Every device gets latest skills from backup
+- **Push (Phase 13b):** New skills broadcast to fleet via backup repo
+- **Bidirectional:** `Bidirectional-Sync-Engine` (placeholder — not yet implemented)
+
+---
+
+## 6. Scripts Inventory
+
+### 6.1 Core Scripts
+
+| Script | Path | Lines | Purpose |
+|--------|------|-------|---------|
+| akasha_sync.py | `akasha_sync.py` | 424 | Collective brain sync |
+| run_369x.py | `Run-369x/run_369x.py` | 1146 | Master orchestration |
+| sync_backup.sh | `scripts/sync_backup.sh` | 161 | Full backup sync |
+| discover_models.py | `scripts/discover_models.py` | 475 | Model discovery |
+| improvement_engine.py | `scripts/improvement_engine.py` | 116 | Auto-install improvements |
+| intelligence_amplifier.py | `scripts/intelligence_amplifier.py` | 92 | Intelligence optimization |
+| akasha_device_registry.py | `scripts/akasha_device_registry.py` | 133 | Fleet registry access |
+| register_this_device.py | `scripts/register_this_device.py` | 45 | Device self-registration |
+| doctor.sh | `scripts/doctor.sh` | ~30 | Health check |
+| fix_venv_path.sh | `scripts/fix_venv_path.sh` | ~20 | PYTHONPATH fix |
+| purge_reminder.sh | `scripts/purge_reminder.sh` | ~15 | Purge reminder |
+| recover_after_purge.sh | `scripts/recover_after_purge.sh` | ~30 | Post-purge recovery |
+| force_providers_config.py | `scripts/force_providers_config.py` | ~350 | **Force-configure all providers (including Ollama Local)** |
+
+### 6.2 Utility Scripts
+
+| Script | Path | Purpose |
+|--------|------|---------|
+| check_linkedin_unread.py | `check_linkedin_unread.py` | LinkedIn notification check |
+| linkedin_demo_processor.py | `linkedin_demo_processor.py` | LinkedIn demo processing |
+| linkedin_notifier.py | `linkedin_notifier.py` | LinkedIn notifications |
+| linkedin_telegram_bot.py | `linkedin_telegram_bot.py` | LinkedIn-Telegram bridge |
+| monitor_claude.py | `monitor_claude.py` | Claude Desktop monitoring |
+| push_to_github.sh | `push_to_github.sh` | Auto-push to GitHub |
+| send_telegram_notification.sh | `send_telegram_notification.sh` | Telegram notifications |
+| run_linkedin_bot.sh | `run_linkedin_bot.sh` | LinkedIn bot launcher |
+| markdown_wiki_server.py | `markdown_wiki_server.py` | Wiki server |
+
+---
+
+## 7. Skills Registry
+
+**Total Skills:** 104 SKILL.md files
+**Registry:** `/home/fb/hermes-agent-backup/Self-Improvement/SKILL_REGISTRY.json`
+
+### 7.1 Registered Skills (8)
+
+| Skill | Description |
+|-------|-------------|
+| 369x-auto-improvement-engine | Continuously monitors backup repo and auto-installs new skills |
+| intelligence-amplifier-engine | Continuous optimization of models, MCP servers, memory |
+| bidirectional-sync-engine | Watches local skills and auto-syncs new ones to Hermes |
+| gateway-self-healing | Diagnoses and fixes common Hermes gateway issues |
+| agent-performance-telemetry | Tracks tool usage, model performance, and session metrics |
+| cross-session-insight-distiller | Mines past Hermes sessions for recurring patterns |
+| mcp-auto-discovery | Auto-discovers, installs, and registers MCP servers |
+| auto-healing-engine | Auto-detect provider rate-limits and failures |
+
+### 7.2 Skill Categories (from directory structure)
+
+- **software-development:** 369x-bootstrap-pipeline, api-and-interface-design, etc.
+- **devops:** docker-automation, hermes-operations, etc.
+- **autonomous-ai-agents:** claude-code, codex, opencode, etc.
+- **security:** Various cybersecurity skills
+- **creative:** Design, video, audio generation
+- **productivity:** Notion, Airtable, Google Workspace
+- **research:** ArXiv, DeepAPI, Polymarket
+- **finance:** Trading, financial analysis
+
+---
+
+## 8. Configuration
+
+### 8.1 config.yaml Structure
+
+```yaml
+# Main config at /home/fb/hermes-agent-backup/config.yaml
+providers:
+  openrouter:
+    base_url: https://openrouter.ai/api/v1
+    models: [list of free models]
+  opencode-zen:
+    base_url: https://opencode.ai/zen/v1
+    models: [list of free models]
+  groq:
+    base_url: https://api.groq.com/v1
+    models: [list of free models]
+  zai:
+    base_url: https://openrouter.ai/api/v1
+    models: [list of free models]
+  nous:
+    base_url: https://inference-api.nousresearch.com/v1
+    models: [list of free models]
+  free-models:
+    base_url: https://openrouter.ai/api/v1
+    models: [aggregated free models from all providers]
+
+# STT/TTS Configuration
+stt:
+  provider: stt_fallback
+  fallback: elevenlabs/scribe_v2
+
+tts:
+  provider: edge
+  voice: es-ES-XimenaNeural
 ```
-**Result:** docs:941 chars, slides:5, infographics:2 SVG, quiz:2 — todos OK ✅
 
-### PDF Designer ✅
-```bash
-python lib/pdf_designer.py
-```
-**Result:** PDF generado con reportlab (fallback sin LaTeX) ✅
+### 8.2 Free Model Registry
 
-### Quality Checker ✅
-```bash
-python lib/quality_checker.py output/pdf_desktop/
-```
-**Result:** 6/6 checks ejecutados correctamente ✅
+**Path:** `/home/fb/hermes-agent-backup/config/free_model_registry.json`
 
-### NotebookLM Client ⚠️
-```bash
-python -c "from lib.notebooklm_client import NotebookLMClient; NotebookLMClient().login()"
-```
-**Result:** Playwright OK, Chromium instalado. Login falla sin credenciales (esperado) ⚠️
+**Providers with Free Models:**
+- OpenRouter: ~50+ free models (`:free` suffix)
+- OpenCode Zen: ~10 free models (`-free` suffix)
+- Groq: 8 free plan models
+- Z.AI: 2 free models (glm-4.5, glm-4.5-flash)
+- Nous Research: 2 free models (laguna-s-2.1:free, laguna-xs-2.1:free)
 
 ---
 
-## Already-Handled Issues
+## 9. A2A Documentation Files
 
-1. **Video downloads para NotebookLM upload** — Google transcribe automáticamente YouTube videos, no hace falta download. URLs son suficientes.
-2. **Brand consistency** — manejado con LaTeX template + ElevenLabs voice selection.
-3. **Version tracking** — A2A files son fuente de verdad, actualizados cada sesión.
-4. **Content Generator SVG NameError** — FIXED: reescrito con string concatenation en lugar de f-strings.
-5. **Quality Checker summary() TypeError** — FIXED: reescrito con self._last_results.
+### 9.1 Current A2A Files
+
+| File | Path | Size | Purpose |
+|------|------|------|---------|
+| A2A-WIP.md | `/home/fb/.hermes/A2A-WIP.md` | 1.4 KB | Short-term project memory |
+| A2A-BUGS.md | `/home/fb/.hermes/A2A-BUGS.md` | 3.5 KB | Known bugs registry |
+| A2A-Fixes.md | `/home/fb/.hermes/A2A-Fixes.md` | 3.1 KB | Applied fixes log |
+| AGENTS.md | `/home/fb/.hermes/AGENTS.md` | 8.6 KB | Permanent operating rules |
+| A2A-WIP.md | `/home/fb/hermes-agent-backup/A2A-WIP.md` | 1.7 KB | Backup copy |
+| A2A-BUGS.md | `/home/fb/hermes-agent-backup/A2A-BUGS.md` | - | Backup copy |
+| A2A-Fixes.md | `/home/fb/hermes-agent-backup/A2A-Fixes.md` | - | Backup copy |
+
+### 9.2 A2A Protocol Compliance
+
+The A2A (Agent-to-Agent) protocol is implemented via:
+- **A2A-WIP.md** — Shared short-term memory between agents
+- **A2A-BUGS.md** — Cross-agent bug tracking
+- **A2A-Fixes.md** — Cross-agent fix documentation
+- **AGENTS.md** — Permanent operating rules (never overwritten)
 
 ---
 
-## Uncovered / Future Work
+## 10. Known Issues & Limitations
 
-1. **Direct YouTube transcript extraction** — actualmente dependemos de NotebookLM auto-transcription. Alternativa: youtube-transcript API como fallback.
-2. **Quiz content type** — actualmente text-based. Futuro: interactive HTML quiz.
-3. **Multi-file ePub generation** — un ePub por idioma. Actualmente single combined.
-4. **API integrations para venta automática** — Hotmart API, Shopify API, Gumroad API para upload automático.
+### 10.1 Placeholder Engines
+13 of 27 Self-Improvement engines are still placeholders (not implemented):
+- API-Key-Balancer
+- Auto-Healing-Engine
+- Battery-Telegram-Alert
+- Bidirectional-Sync-Engine
+- Cross-Session-Insight-Distiller
+- Gateway-Online-Notifier
+- Gateway-Self-Healing
+- Intelligence-Amplifier-Engine
+- MCP-Auto-Discovery
+- Model-Explorer
+- Rate-Limit-Free-Failover
+- Top-Skills-Collection
+- 369x-Auto-Improvement-Engine
+
+### 10.2 Cronjob Issues (Resolved)
+- **voice-config-sync-daily:** Was failing with `Context length exceeded (221 tokens)` when using `glm-4.5-flash` agent. Fixed by switching to `no_agent: true` with script-only mode.
+
+### 10.3 Provider Failover
+- ZAI keys were truncated/expired causing loops
+- Fix: Added `opencode-zen-main-0` as fallback before `zai-main-0`
+
+### 10.4 /rotate Command
+- `/rotate` endpoint not implemented in any provider
+- Workaround: Validation returns success without calling endpoint
 
 ---
 
-## Owner Notes
+## 11. Recommendations
 
-This is Phase 1 complete. All code written, tested, and pushed to GitHub. Ready to execute when 4 credentials configured.
+### 11.1 High Priority
+1. **Implement Bidirectional-Sync-Engine** — Currently placeholder, critical for fleet sync
+2. **Implement API-Key-Balancer** — Auto-rotate keys on 429 errors
+3. **Implement Auto-Healing-Engine** — Auto-detect and fix provider failures
+4. **Expand Free Model Catalog** — Add more providers (Together, Fireworks, etc.)
+
+### 11.2 Medium Priority
+5. **Implement MCP-Auto-Discovery** — Auto-discover and register MCP servers
+6. **Implement Gateway-Self-Healing** — Auto-restart gateway on failure
+7. **Implement Agent-Performance-Telemetry** — Track model performance
+8. **Add more A2A documentation** — A2A-Research, A2A-Business, A2A-Product
+
+### 11.3 Low Priority
+9. **Implement Battery-Telegram-Alert** — Monitor device batteries
+10. **Implement Gateway-Online-Notifier** — Notify when gateway comes online
+11. **Implement Model-Explorer** — Browse all AI models across providers
 
 ---
 
-> Updated: 2026-08-21. Status: INFRAESTRUCTURA COMPLETA.
+## 12. Verification Status
+
+| Component | Last Verified | Status |
+|-----------|---------------|--------|
+| 369x Full Run | 2026-08-17 | ✅ 22/22 steps passed |
+| Akasha Sync | 2026-08-17 | ✅ Device T35L4X-40RU5 registered |
+| STT Config | 2026-08-17 | ✅ elevenlabs/scribe_v2 |
+| TTS Config | 2026-08-17 | ✅ edge/es-ES-XimenaNeural |
+| Telegram Bot | 2026-08-17 | ✅ @Hermes_AIIA_bot verified |
+| Cronjob voice-config-sync-daily | 2026-08-17 | ✅ no_agent mode, runs 09:00 ART |
+| Git Push | 2026-08-17 | ✅ Commit af629d3 |
+
+---
+
+## 13. Conclusion
+
+The Akasha (hermes-agent-backup) repository is a **mature, well-structured** backup and synchronization system for the Hermes Agent ecosystem. Key strengths:
+
+- ✅ **Complete automation** — 369x handles everything in 22 phases
+- ✅ **Bidirectional sync** — Skills, scripts, config flow both ways
+- ✅ **Fleet coordination** — 18 devices registered and syncing
+- ✅ **Self-healing** — TTS/STT auto-install, provider failover
+- ✅ **Free model discovery** — Aggregates free models from 5+ providers
+- ✅ **A2A protocol** — Shared memory and bug tracking across agents
+
+Main area for improvement: **13 placeholder engines** need implementation to reach full autonomous operation potential.
+
+---
+
+**Last Updated:** 2026-08-17 23:35 UTC
+**Next Review:** After next 369x run or significant repo changes

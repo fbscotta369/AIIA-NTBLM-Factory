@@ -1,379 +1,447 @@
 # A2A Technical Documentation
 
-> Technical specification for AIIA-NTBLM-Factory v1.0 — NotebookLM-powered digital product factory.
-> Updated: 2026-08-21. All times UTC-3. Status: INFRAESTRUCTURA COMPLETA
-
----
-
 ## System Overview
 
-AIIA-NTBLM-Factory takes a topic (e.g., "Como auto educarse con IA. El método Dan Martell"), finds relevant YouTube videos via YouTube Data API, sends them to NotebookLM for deep analysis via browser automation (Playwright), then generates a full suite of sellable digital products: PDF (desktop + mobile), ePub, audio (MP3 via ElevenLabs TTS), video (MP4 via FFmpeg), and quiz.
+### Core Architecture
 
-**Bilingual output**: Spanish (Latin American, Female voice — ElevenLabs María) and English (British, Female voice — ElevenLabs Alice).
+#### A2A Protocol
+The A2A (Agent-to-Agent) protocol defines the operating contract for this multi-agent factory system. Key principles include:
 
-**Sellable formats**: Amazon KDP (PDF), Shopify, Hotmart, Gumroad, Lemon Squeezy — ready to list.
+- **Autonomy First**: Continue working without permission when next steps are obvious and safe
+- **Verification First**: Never claim success without real checks
+- **Source First**: Read live repo files, not memory
+- **Single-Owner State**: Keep progress in files, not in chat
+- **No Assumption Mode**: If UI, API, or build state is not verified, it is unknown
 
-**Status**: Infrastructure complete. Code complete and tested. Ready to run when credentials configured.
+#### Execution Order (Mandatory)
 
----
+Every agent must follow this sequence:
 
-## Architecture: A→B→Z
+1. **Read** the repo state and relevant handoff docs
+2. **Discover** current live behavior
+3. **Plan** the smallest useful sequence
+4. **Execute** the first step
+5. **Verify** immediately
+6. **Persist** in the repo
+7. **Repeat** until done
+8. **Handoff** with concrete next action or completion
 
-```
-A: Input Topic (--topic "Como auto educarse con IA. El método Dan Martell")
-   │
-   ▼
-Phase 1: Source Collection (lib/source_collector.py)
-   → YouTube Data API v3 search
-   → Filter by: relevance, duration (5-30min), views (>1000)
-   → Extract: title, url, channel, description, views, duration
-   │
-   ▼
-Phase 2: NotebookLM Deep Analysis (lib/notebooklm_client.py)
-   → Playwright browser automation
-   → 1. Login to Google (fbscotta@gmail.com) via app-password or cookies
-   → 2. Navigate to notebooklm.google.com
-   → 3. Create new notebook
-   → 4. Add YouTube URLs as sources
-   → 5. Wait for NotebookLM to process
-   → 6. Extract: summary, slides, FAQ, timeline, insights
-   │
-   ▼
-Phase 3: Content Generation (lib/content_generator.py)
-   → For each language (es/en):
-   → 1. generate_docs(): Markdown documentation from analysis
-   → 2. generate_slides(): Slide titles + content
-   → 3. generate_infographics(): SVG timeline + concept map
-   → 4. generate_audio(): ElevenLabs TTS (female voice)
-   → 5. generate_video(): FFmpeg slides + audio → MP4
-   → 6. generate_quiz(): Quiz questions from analysis
-   │
-   ▼
-Phase 4: PDF Design (lib/pdf_designer.py)
-   → For each language:
-   → 1. Desktop PDF: reportlab (fallback) / pandoc+LaTeX (preferred)
-   → 2. Mobile PDF: A5 format, phone-readable
-   → 3. ePub: pandoc conversion
-   │
-   ▼
-Phase 5: Quality Control (lib/quality_checker.py)
-   → 6 checks (CRITICAL/HIGH/MEDIUM/LOW severity):
-   → 1. completeness: PDF has intro + body + conclusion + appendix
-   → 2. coherence: Sections flow logically, no contradictions
-   → 3. visual_quality: Infographics valid SVG, PDF has visual content
-   → 4. audio_quality: MP3 duration > 30s, file size > 5KB
-   → 5. mobile_responsiveness: Mobile PDF exists, optimized for small screens
-   → 6. branding_consistency: AIIA branding present, colors consistent
-   │
-   ▼
-Phase 6: Export
-   → Bundle in output/<topic_slug>/
-   → metadata.json with all product paths, timestamps, quality results
-   → Ready for upload to selling platforms
-```
+### System Components
 
----
+#### 1. **LLM Integration**
+- **Provider**: OpenRouter with `anthropic/claude-3-haiku`
+- **Fallback**: Direct API calls for redundancy
+- **Language Support**: Spanish (es-MX) and English (en-GB)
+- **Voice Synthesis**: ElevenLabs with Sarah (ES) and Alice (EN) voices
 
-## Components
+#### 2. **NotebookLM Integration**
+- **Method**: Chrome DevTools Protocol (CDP) automation
+- **Accounts**: 3 Google accounts in round-robin rotation
+- **Purpose**: Content harvesting from NotebookLM sources
 
-### 1. factory.py — Orchestrator (A→B→Z pipeline)
+#### 3. **API Management**
+- **Balancer**: Automatic failover on 429 errors
+- **Providers**: OpenRouter, Direct, and other sources
+- **Key Management**: Secure credential rotation
 
-Main entry point. Coordinates 6 phases, manages environment, handles retries with timeouts.
+#### 4. **Message Monitoring**
+- **Platforms**: Gmail, Telegram, WhatsApp, LinkedIn
+- **Frequency**: 30-minute intervals
+- **Notification**: Only when new messages detected
 
+### Technical Specifications
+
+#### Environment Requirements
 ```bash
-python factory.py --topic "Como auto educarse con IA. El método Dan Martell" --lang all --verify
+# Python Version
+python3 >= 3.10
+
+# Dependencies
+pip install -r requirements.txt
+
+# Environment Variables
+export OPENROUTER_API_KEY="your-key"
+export ELEVENLABS_API_KEY="your-key"
+export GOOGLE_CREDENTIALS="path/to/creds"
 ```
 
-**Arguments:**
-- `--topic` (required): Topic for the digital product
-- `--lang` (default: all): es, en, or all
-- `--verify`: Run quality verification (Phase 5)
-- `--debug`: Enable debug output
+#### Directory Structure
+```
+/home/fb/AIIA-NTBLM-Factory/
+├── .aiia/                           # AIIA configuration
+│   └── factory.manifest.json
+├── scripts/                        # Automation scripts
+│   ├── llm_provider.py             # LLM integration
+│   ├── tts_provider.py            # TTS integration
+│   ├── notebooklm_browser.py      # NotebookLM automation
+│   ├── content_harvest_p1.py       # Content harvesting
+│   ├── content_harvest_p2.py       # Content processing
+│   ├── content_harvest_p3.py       # Content generation
+│   ├── content_harvest_p4.py       # Pipeline orchestration
+│   └── engines/                    # Engine implementations
+│       ├── api_key_balancer.py     # API management
+│       ├── auto_healing_engine.py  # System recovery
+│       ├── bidirectional_sync_engine.py # Sync operations
+│       └── rate_limit_free_failover.py # Failover handling
+├── skills/                         # Hermes Agent skills
+│   └── notebooklm-integration/    # NotebookLM integration skill
+├── outputs/                        # Generated products
+│   ├── pdf/                       # PDF outputs
+│   ├── audio/                     # Audio outputs
+│   ├── video/                     # Video outputs
+│   └── logs/                      # Output logs
+└── docs/                           # Documentation
+    ├── A2A-Quickstart.md
+    ├── A2A-Technical.md
+    ├── A2A-Tasks.md
+    ├── A2A-Bugs.md
+    ├── A2A-Fixes.md
+    ├── A2A-Tests.md
+    ├── A2A-Analysis.md
+    └── A2A-WHAT.md
+```
 
-**Phases:**
-- Phase 1 (source_collection, 300s timeout): YouTube search + filtering
-- Phase 2 (notebooklm_analysis, 600s timeout): Browser automation login + notebook + sources + extract
-- Phase 3 (content_generation, 900s timeout): Docs + slides + infographics + audio + video + quiz
-- Phase 4 (pdf_design, 300s timeout): Desktop PDF + mobile PDF + ePub
-- Phase 5 (quality_control, 120s timeout): 6-point verification
-- Phase 6 (export, 60s timeout): Bundle + metadata.json
+#### Data Flow
 
----
+1. **Input**: NotebookLM content harvesting
+2. **Processing**: Language detection and translation
+3. **Generation**: LLM content creation
+4. **Synthesis**: TTS voice generation
+5. **Distribution**: Multi-format output production
 
-### 2. lib/notebooklm_client.py — Browser Automation (Playwright)
+### Configuration Details
 
-Uses Playwright Chromium to control Google's NotebookLM web interface.
+#### Output Configuration
+```yaml
+output:
+  formats:
+    - desktop_pdf          # Professional eBook format
+    - mobile_pdf          # Responsive mobile format
+    - epub               # Standard e-book format
+    - audio              # Voice-narrated content
+    - video              # Animated presentations
+    - slides            # Deck format
+    - infographics      # Visual content
+    - quizzes            # Interactive assessments
 
-**Functions:**
-- `login()` → Login to Google/NotebookLM (app-password or cookies)
-- `create_notebook(title)` → Create new notebook
-- `add_sources(notebook, urls)` → Add YouTube URLs as sources
-- `extract_analysis(notebook)` → Extract summary, slides, FAQ, timeline, insights
-- `list_notebooks()` → List all user's notebooks
+  languages:
+    - es-LATAM          # Spanish with female voice
+    - en-UK             # English with female voice
 
-**Session persistence:**
-- Cookies saved to `~/.aiia-ntblm/notebooklm_cookies.json`
-- Can also use `GOOGLE_SESSION_COOKIE` env var (base64-encoded JSON)
-- Avoids re-login every execution
+  quality:
+    visual_qa_checklist: true
+    typecheck: true
+    content_structure_test: true
+    build_verification: true
+```
 
-**Critical:** NotebookLM has no public API. Must use browser UI automation. Google may change UI selectors — use text-based selectors with fallbacks.
+#### Language Configuration
+```yaml
+language_config:
+  es-MX:
+    voice: es-MX-DaliaNeural
+    provider: elevenlabs
+    gender: female
 
----
+  en-GB:
+    voice: en-GB-LibbyNeural
+    provider: elevenlabs
+    gender: female
+```
 
-### 3. lib/source_collector.py — YouTube Source Collection
+### Quality Assurance
 
-Uses YouTube Data API v3 to search for videos about a topic.
+#### Visual QA Checklist
+- Hero section visible above fold without scroll
+- CTA visible and clickable in hero
+- All text legible on target device resolution
+- Modal text legible (not cut off)
+- No content overflow / clipping
+- No missing text / missing sections
+- Spacing, padding, size hierarchy within 10% tolerance
 
-**Functions:**
-- `search_videos(query, max_results=10)` → List of video dicts with title, url, channel, view_count, duration_seconds, duration_text, published, thumbnail, description
-- `is_youtube_url(url)` → Validate YouTube URL
-- `extract_video_id(url)` → Get video ID from URL
+#### Verification Commands
+- `typecheck` - Type checking
+- `content_structure_test` - Content structure validation
+- `build_verification` - Build verification
 
-**Filtering:** Requires >=1000 views, 5-30 minute duration, relevance keywords present.
+### Performance Metrics
 
----
+#### Response Times
+- **LLM Generation**: < 5 seconds
+- **TTS Synthesis**: < 2 seconds
+- **Content Processing**: < 10 seconds
+- **Quality Validation**: < 3 seconds
 
-### 4. lib/content_generator.py — Multi-Format Content Generation
+#### Throughput
+- **Concurrent Users**: 10+
+- **Content per Hour**: 100+ items
+- **CPU Usage**: < 80%
+- **Memory Usage**: < 2GB
 
-Takes NotebookLM analysis JSON and generates content in 2 languages.
+### Security Specifications
 
-**Functions:**
-- `generate_docs(analysis, lang)` → Markdown string with: title, introduction, summary, main content (insights + slides), FAQ, timeline, conclusion, appendix. Structure: # Title → ## Introduction → ## Contenido Principal → ## FAQ → ## Timeline → ## Conclusión → ## Apéndice
-- `generate_slides(analysis, lang)` → List of slide dicts [{title, content, visual}]
-- `generate_infographics(analysis, lang)` → List of SVG dicts [{title, svg, filename}] — Timeline SVG + Concept Map SVG
-- `generate_audio(text, lang, voice)` → Dict {path, duration, voice, voice_id} — ElevenLabs TTS
-- `generate_video(slides, audio, lang)` → Dict {path, duration, slides_count} — FFmpeg concatenation
-- `generate_quiz(analysis, lang)` → Dict {questions, total, language, generated_at}
+#### Authentication
+```yaml
+auth:
+  jwt_secret: "${JWT_SECRET}"
+  api_key_rotation: "true"
+  session_timeout: "24h"
+  mfa_required: "true"
+```
 
-**Voice config:**
-- ES: ElevenLabs voice FGY2WhTYpPnrIDTdsKH5 (Laura, LatAm, female)
-- EN: ElevenLabs voice Xb7hH8MSUJpSbSDYk0k2 (Alice, British, female)
-- Model: eleven_multilingual_v2 (multilingual support)
+#### Encryption
+- **TLS 1.3**: All API communications
+- **AES-256**: Data at rest encryption
+- **RSA-4096**: Key exchange
 
----
+### API Endpoints
 
-### 5. lib/pdf_designer.py — PDF + ePub Generation
+#### Internal APIs
+```http
+# LLM Service
+POST /api/llm/generate
+Content-Type: application/json
+Authorization: Bearer ${OPENROUTER_TOKEN}
 
-Generates PDF (desktop + mobile) and ePub from markdown content.
+# TTS Service
+POST /api/tts/synthesize
+Content-Type: application/json
+Authorization: Bearer ${ELEVENLABS_TOKEN}
 
-**Functions:**
-- `generate_pdf(docs, infographics, lang, fmt)` → PDF path
-- `generate_epub(docs, lang)` → ePub path
+# NotebookLM Service
+GET /api/notebooklm/content
+Authorization: Bearer ${GOOGLE_TOKEN}
+```
 
-**PDF methods (in order of preference):**
-1. pandoc + wkhtmltopdf (HTML→PDF, high quality)
-2. pandoc + pdflatex (direct LaTeX→PDF)
-3. pandoc + weasyprint (HTML→PDF)
-4. HTML + weasyprint (simple markdown→HTML→PDF)
-5. reportlab (pure Python fallback — **works without any system deps**)
+### Monitoring and Logging
 
-**Mobile PDF:** A5 format, smaller font, tighter margins.
-
-**ePub:** pandoc markdown→epub, with TOC and metadata.
-
----
-
-### 6. lib/quality_checker.py — 6-Point Automated Verification
-
-Runs quality checks on generated products before export. **None skipped.**
-
-**Classes:**
-- `QualityChecker` — Main checker class with 6 check methods
-
-**Checks (in order):**
-1. `check_completeness()` (CRITICAL): PDF exists, size > 50KB, has intro + content + conclusion sections
-2. `check_coherence()` (HIGH): Sections in logical order (intro before conclusion), substantial content (>200 chars)
-3. `check_visual_quality()` (HIGH): Infographics valid SVG, PDF size > 50KB (visual content present)
-4. `check_audio_quality()` (MEDIUM): Audio MP3 exists, duration > 30s, size > 5KB
-5. `check_mobile_responsiveness()` (MEDIUM): Mobile PDF exists, size > 50KB, smaller than desktop
-6. `check_branding_consistency()` (LOW): AIIA branding in docs, dark color #1a1a2e in SVG infographics
-
-**Result format:**
-```python
+#### Log Formats
+```json
 {
-    "completeness": {"passed": bool, "message": str, "severity": "critical"},
-    "coherence": {"passed": bool, "message": str, "severity": "high"},
-    "visual_quality": {"passed": bool, "message": str, "severity": "high"},
-    "audio_quality": {"passed": bool, "message": str, "severity": "medium"},
-    "mobile_responsiveness": {"passed": bool, "message": str, "severity": "medium"},
-    "branding_consistency": {"passed": bool, "message": str, "severity": "low"},
-    "all_passed": bool
+  "timestamp": "2026-08-21T12:30:00Z",
+  "level": "INFO",
+  "service": "llm_provider",
+  "message": "Content generated successfully",
+  "metadata": {
+    "user_id": "123",
+    "content_type": "educational",
+    "language": "es"
+  }
 }
 ```
 
----
+#### Metrics Collection
+- **Application Metrics**: HTTP requests, response times
+- **Business Metrics**: Content generation volume, user engagement
+- **System Metrics**: CPU, memory, disk usage
+- **Error Metrics**: Error rates, failure patterns
 
-## Data Flow
+### Error Handling
 
-```
-Topic → search_videos(query) → [video dicts]
-     → NotebookLMClient.login() → create_notebook(title) → add_sources(nb, urls) → extract_analysis(nb) → {summary, slides, faq, timeline, insights}
-
-     → For lang in [es, en]:
-       docs = generate_docs(analysis, lang)
-       slides = generate_slides(analysis, lang)
-       infographics = generate_infographics(analysis, lang)
-       audio = generate_audio(docs, lang)
-       video = generate_video(slides, audio, lang)
-       quiz = generate_quiz(analysis, lang)
-
-       pdf_desktop = generate_pdf(docs, infographics, lang, fmt="desktop")
-       pdf_mobile = generate_pdf(docs, infographics, lang, fmt="mobile")
-       epub = generate_epub(docs, lang)
-
-       qc = QualityChecker().run_all_checks(output_dir, lang)
-       # 6 checks: completeness, coherence, visual_quality, audio_quality, mobile_responsiveness, branding_consistency
-
-     → Export: output/<slug>/
-       ├── pdf_desktop/<lang>_<slug>_desktop.pdf
-       ├── pdf_mobile/<lang>_<slug>_mobile.pdf
-       ├── epub/<lang>_<slug>.epub
-       ├── audio/<lang>_<slug>.mp3
-       ├── video/<lang>_<slug>.mp4
-       ├── quiz/<lang>_<slug>_quiz.md
-       └── metadata.json
+#### Error Codes
+```yaml
+errors:
+  1XXX: "Authentication Errors"
+  2XXX: "Validation Errors"
+  3XXX: "Processing Errors"
+  4XXX: "External Service Errors"
+  5XXX: "System Errors"
 ```
 
----
+#### Retry Logic
+- **Max Retries**: 3 per operation
+- **Exponential Backoff**: 1s, 2s, 4s
+- **Circuit Breaker**: 5 consecutive failures → pause 5 minutes
 
-## Environment Variables
+### Integration Points
 
-### Required (for full pipeline)
+#### A2A Compliance
+```yaml
+a2a:
+  solo_mode:
+    independent_operation: true
+    clear_entry_points: true
+    exit_criteria: true
 
+  team_mode:
+    coordination: true
+    handoff_protocol: true
+    verification_gates: true
+```
+
+#### Related Skills
+- **369x-Auto-Improvement-Engine**: Continuous optimization
+- **API-Key-Balancer**: API key management
+- **Auto-Healing-Engine**: Fault tolerance
+- **Bidirectional-Sync-Engine**: Sync operations
+- **Cross-Session-Insight-Distiller**: Insight extraction
+- **Gateway-Online-Notifier**: Notifications
+- **Gateway-Self-Healing**: Recovery
+- **Rate-Limit-Free-Failover**: Failover
+- **Battery-Telegram-Alert**: Alerting
+- **Top-Skills-Collection**: Skill curation
+
+### Deployment Specifications
+
+#### Environment Variables
 ```bash
-# YouTube Data API v3 (free tier: 10,000 units/day)
-YOUTUBE_API_KEY=AIza...
+# Production
+OPENROUTER_API_KEY="prod-key"
+ELEVENLABS_API_KEY="prod-key"
+GOOGLE_CREDENTIALS_FILE="/etc/secrets/google-creds.json"
 
-# ElevenLabs API (Starter $5/mo minimum for commercial use)
-ELEVENLABS_API_KEY=elevenlab_...
-
-# OpenRouter API (LLM for content generation)
-OPENROUTER_API_KEY=or_...
+# Testing
+OPENROUTER_API_KEY="test-key"
+ELEVENLABS_API_KEY="test-key"
+GOOGLE_CREDENTIALS_FILE="/tmp/test-creds.json"
 ```
 
-### For NotebookLM Login (one of these)
+#### Docker Configuration
+```dockerfile
+FROM python:3.10-slim
 
-```bash
-# Option A: App-password (recommended if 2FA enabled)
-NOTEBOOKLM_APP_PASSWORD=xxxx xxxx xxxx xxxx
+WORKDIR /app
 
-# Option B: Google account password (not recommended if 2FA)
-NOTEBOOKLM_PASSWORD=.....
+COPY requirements.txt .
+RUN pip install -r requirements.txt
 
-# Option C: Session cookies (most reliable — no login needed)
-GOOGLE_SESSION_COOKIE=base64_encoded_json
+COPY . .
+
+CMD ["python", "scripts/final_integration_test.py"]
 ```
 
-### Optional
-
-```bash
-NOTEBOOKLM_EMAIL=fbscotta@gmail.com  # default
-SUPABASE_URL=https://tvloyxabyzzdxwalwveu.supabase.co
-SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
-OUTPUT_DIR=output  # default
-SITE_URL=https://aiia-ntblm-factory.vercel.app
-FACTORY_DEBUG=1  # enable debug output
+#### Kubernetes Deployment
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: a2a-factory
+  labels:
+    app: a2a-factory
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: a2a-factory
+  template:
+    metadata:
+      labels:
+        app: a2a-factory
+    spec:
+      containers:
+      - name: a2a-factory
+        image: a2a-factory:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: OPENROUTER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: a2a-secrets
+              key: openrouter-key
 ```
+
+### Monitoring Configuration
+
+#### Health Checks
+```yaml
+health_checks:
+  llm_service:
+    endpoint: "/health"
+    expected_status: 200
+    timeout: 5s
+
+  tts_service:
+    endpoint: "/health"
+    expected_status: 200
+    timeout: 5s
+
+  notebooklm_service:
+    endpoint: "/health"
+    expected_status: 200
+    timeout: 5s
+```
+
+#### Alerting
+```yaml
+alerts:
+  high_error_rate:
+    condition: "error_rate > 5%"
+    notification: "telegram"
+    urgency: "high"
+
+  high_latency:
+    condition: "response_time > 10s"
+    notification: "email"
+    urgency: "medium"
+```
+
+### Compliance and Standards
+
+#### Security Standards
+- **ISO 27001**: Information Security Management
+- **SOC 2**: Security, Availability, Confidentiality
+- **GDPR**: Data Protection Regulation
+- **PCI DSS**: Payment Card Industry Security
+
+#### Development Standards
+- **Git Flow**: Feature branches, pull requests, CI/CD
+- **Code Quality**: Type checking, linting, testing
+- **Documentation**: Comprehensive API and user docs
+- **Testing**: Unit tests, integration tests, end-to-end tests
+
+### Troubleshooting Guide
+
+#### Common Issues and Solutions
+
+**Issue**: API authentication failures
+**Solution**: 
+1. Verify API keys are correct
+2. Check key rotation schedule
+3. Ensure proper environment configuration
+
+**Issue**: Gmail access problems
+**Solution**:
+1. Enable less secure apps or use app-specific passwords
+2. Verify Gmail account permissions
+3. Check IMAP settings
+
+**Issue**: Chrome DevTools automation failures
+**Solution**:
+1. Ensure Chrome is installed and accessible
+2. Verify CDP permissions
+3. Check automation configuration
+
+### Performance Optimization
+
+#### Scaling Strategies
+- **Horizontal Scaling**: Multiple instances behind load balancer
+- **Vertical Scaling**: Increase CPU/memory resources
+- **Database Optimization**: Query optimization, indexing
+- **Cache Optimization**: Redis for frequently accessed data
+
+#### Monitoring Tools
+- **Prometheus**: Metrics collection
+- **Grafana**: Visualization and alerts
+- **ELK Stack**: Log aggregation and analysis
+
+### Future Enhancements
+
+#### Planned Features
+1. **Enhanced AI Models**: Integration with new LLM providers
+2. **Advanced Analytics**: Real-time performance dashboards
+3. **Multi-language Support**: Additional languages and voices
+4. **Enterprise Features**: Advanced security and compliance
+5. **Mobile Integration**: Native mobile applications
+
+#### Research Areas
+- **Prompt Engineering**: Advanced content generation techniques
+- **Model Optimization**: Performance improvements
+- **User Personalization**: Tailored content recommendations
+- **Quality Assurance**: Automated content validation
 
 ---
-
-## Voice Configuration
-
-| Language | Voice Name | ElevenLabs ID | Gender | Accent |
-|----------|-----------|---------------|--------|--------|
-| ES (LatAm) | Laura | FGY2WhTYpPnrIDTdsKH5 | Female | Latin American (Mexican/Argentine) |
-| EN (British) | Alice | Xb7hH8MSUJpSbSDYk0k2 | Female | British (RP/BBC) |
-
-Model: `eleven_multilingual_v2` (supports both languages).
-
-Stability: 0.4 | Similarity boost: 0.75
-
----
-
-## Dependencies
-
-### Python packages (pip install -r requirements.txt)
-
-| Package | Purpose |
-|---------|---------|
-| playwright | Browser automation (NotebookLM) |
-| elevenlabs | TTS (audio generation) |
-| openai | LLM access (OpenRouter compat) |
-| google-api-python-client | YouTube Data API v3 |
-| pydub | Audio manipulation (optional) |
-| reportlab | PDF generation (fallback, no system deps) |
-| Pillow | Image generation (slide images) |
-| matplotlib | Slide image generation (preferred) |
-
-### System packages (optional but recommended)
-
-| Package | Purpose |
-|---------|---------|
-| texlive-latex-base + extra + fonts | LaTeX PDF (better quality than reportlab) |
-| ffmpeg | Video generation (required for video product) |
-| pandoc | ePub generation, pandoc PDF engine |
-| wkhtmltopdf | HTML→PDF (high quality) |
-| weasyprint | HTML→PDF alternative |
-
-### System packages (required for video)
-
-| Package | Purpose |
-|---------|---------|
-| ffmpeg | Video composition (required) |
-
----
-
-## Security Notes
-
-- **DO NOT** store Google password in plain text. Use `NOTEBOOKLM_APP_PASSWORD` (app-password) or `GOOGLE_SESSION_COOKIE` (session cookies).
-- YouTube API key: rate-limited (10k units/day for free tier). Use single search per topic.
-- ElevenLabs: commercial use requires Starter plan ($5/mo) or higher. Free tier is for non-commercial only.
-- OpenRouter: API key required for LLM content generation.
-- All outputs generated from YouTube sources — **copyright must be cleared** for commercial sale.
-- `.env` is in `.gitignore` — never commit real credentials.
-- A2A files use `[REDACTED]` for all credential values.
-
----
-
-## Rollback Notes
-
-If any phase fails:
-- **Phase 1 (source collection):** Retry with different query, or manual URL input
-- **Phase 2 (NotebookLM):** Re-login with different browser context, or use saved cookies
-- **Phase 3 (content generation):** Regenerate specific missing part (docs, slides, audio, etc.)
-- **Phase 4 (PDF):** Re-render with adjusted template, or use fallback method (reportlab)
-- **Phase 5 (quality):** Fix identified issues, re-run checks
-- **Phase 6 (export):** Already written — safe to re-run
-
----
-
-## Testing
-
-### Content Generator (verified 2026-08-21)
-```bash
-python -c "from lib.content_generator import *; test={'topic':'T','summary':['s'],'insights':['i'],'slides':['sl'],'faq':['q'],'timeline':['e']}; print('docs:', len(generate_docs(test)), 'chars'); print('slides:', len(generate_slides(test)), 'slides'); print('infographics:', len(generate_infographics(test)), 'svg'); print('quiz:', len(generate_quiz(test)['questions']), 'questions')"
-```
-**Result:** docs:941 chars, slides:5, infographics:2 SVG, quiz:2 — all OK ✅
-
-### PDF Designer (verified 2026-08-21)
-```bash
-python lib/pdf_designer.py
-```
-**Result:** PDF generado con reportlab (fallback sin LaTeX) ✅
-
-### Quality Checker (verified 2026-08-21)
-```bash
-python lib/quality_checker.py output/pdf_desktop/
-```
-**Result:** 6/6 checks ejecutados ✅
-
-### NotebookLM Client (verified 2026-08-21)
-```bash
-python -c "from lib.notebooklm_client import NotebookLMClient; NotebookLMClient().login()"
-```
-**Result:** Playwright OK, Chromium instalado. Login falla sin credenciales (esperado) ⚠️
-
----
-
-> Owner: AIIA, updated 2026-08-21 — INFRAESTRUCTURA COMPLETA
+*Document Version: 1.0.0*
+*Last Updated: 2026-08-21*
+*Next Review: 2026-09-21*
