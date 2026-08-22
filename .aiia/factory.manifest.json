@@ -2,8 +2,29 @@
   "name": "AIIA-NTBLM-Factory",
   "version": "1.0.0",
   "description": "Multi-agent factory for automated NotebookLM processing and eBook generation",
-  "platforms": ["gmail", "telegram", "whatsapp", "linkedin"],
-  "capabilities": ["content_harvest", "unified_messaging", "a2a_documentation"],
+  "platforms": [
+    "gmail",
+    "telegram",
+    "whatsapp",
+    "linkedin"
+  ],
+  "capabilities": [
+    "content_harvest",
+    "unified_messaging",
+    "a2a_documentation"
+  ],
   "status": "production",
-  "last_updated": "2026-08-21"
+  "last_updated": "2026-08-21",
+  "factory_verification": {
+    "last_verified_date": "2026-08-22",
+    "task_group": "TG-AIIA-FACTORY-2026-08-22",
+    "verification_method": "direct_execution_under_AIIA_DR1_after_delegate_401",
+    "status": "VERIFIED_GREEN_OR_FIXED",
+    "summary": "python3 scripts/run_tests.py 4/4 passed exit 0 (custom runner).",
+    "next_agent_must_repeat_on": [
+      ".aiia/factory.manifest.json (refresh factory_verification block)",
+      ".aiia/logs/factory-verification-YYYY-MM-DD.jsonl (append event line)"
+    ],
+    "control_plane": "/home/fb/Downloads/A2A-SHARED-PROGRESS.md"
+  }
 }
